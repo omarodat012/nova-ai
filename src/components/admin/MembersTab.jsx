@@ -1,0 +1,141 @@
+import { useState } from 'react';
+import { ListFilter, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext.jsx';
+import { getRoleById } from '../../data/memberRoles.js';
+import { useAdminAction } from '../../hooks/useAdminAction.js';
+import { deleteMember } from '../../services/membersService.js';
+import {
+  ActionAlert,
+  CollectionState,
+  ConfirmDialog,
+  FilterSelect,
+  IconButton,
+  PersonMeta,
+  SearchInput,
+  SubteamChip,
+  SubteamFilterOptions,
+} from './AdminBits.jsx';
+import MemberFormModal from './MemberFormModal.jsx';
+
+function matchesSearch(member, search) {
+  const needle = search.trim().toLowerCase();
+  if (!needle) return true;
+  return [member.fullName, member.email, member.phone].some((value) => value?.toLowerCase().includes(needle));
+}
+
+function byName(a, b) {
+  return (a.fullName ?? '').localeCompare(b.fullName ?? '');
+}
+
+function MemberRow({ member, onEdit, onDelete }) {
+  const { t, localize } = useLanguage();
+  const role = getRoleById(member.role);
+
+  return (
+    <li className="glass flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:p-5">
+      <div className="flex min-w-0 flex-1 items-start gap-4">
+        <span
+          aria-hidden="true"
+          className="bg-logo grid size-12 shrink-0 place-items-center rounded-2xl font-display text-lg font-extrabold"
+        >
+          {member.fullName?.trim().charAt(0).toUpperCase()}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="min-w-0 font-bold [overflow-wrap:anywhere]">{member.fullName}</h3>
+            {role && (
+              <span
+                className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
+                  member.role === 'leader' ? 'border-bow/45 bg-bow/10 text-bow' : 'border-edge bg-white/5 text-muted'
+                }`}
+              >
+                {localize(role.label)}
+              </span>
+            )}
+            <SubteamChip id={member.subteam} />
+          </div>
+          <PersonMeta person={member} />
+        </div>
+      </div>
+
+      <div className="flex shrink-0 justify-end gap-2">
+        <IconButton icon={Pencil} label={`${t('admin.common.edit')}: ${member.fullName}`} onClick={onEdit} />
+        <IconButton
+          icon={Trash2}
+          tone="danger"
+          label={`${t('admin.common.delete')}: ${member.fullName}`}
+          onClick={onDelete}
+        />
+      </div>
+    </li>
+  );
+}
+
+// `collection` is the live useCollection('members') result owned by the dashboard.
+export default function MembersTab({ collection }) {
+  const { t } = useLanguage();
+  const [search, setSearch] = useState('');
+  const [subteam, setSubteam] = useState('');
+  // `editor` is null when closed, { member: null } to add, or { member } to edit.
+  const [editor, setEditor] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { busyId, errorKey, run } = useAdminAction();
+
+  const visible = collection.items
+    .filter((member) => (!subteam || member.subteam === subteam) && matchesSearch(member, search))
+    .sort(byName);
+
+  const confirmDelete = async () => {
+    await run(deleteTarget.id, () => deleteMember(deleteTarget.id));
+    setDeleteTarget(null);
+  };
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchInput value={search} onChange={setSearch} placeholder={t('admin.members.search')} />
+        <FilterSelect icon={ListFilter} label={t('admin.common.subteamFilter')} value={subteam} onChange={setSubteam}>
+          <SubteamFilterOptions />
+        </FilterSelect>
+        <button type="button" onClick={() => setEditor({ member: null })} className="btn btn-primary w-full sm:w-auto">
+          <UserPlus className="size-5" />
+          {t('admin.members.add')}
+        </button>
+      </div>
+
+      <ActionAlert errorKey={errorKey} />
+
+      <CollectionState
+        collection={collection}
+        hasResults={visible.length > 0}
+        empty={{ icon: Users, title: t('admin.members.emptyTitle'), text: t('admin.members.emptyText') }}
+      >
+        <ul className="mt-6 space-y-3">
+          {visible.map((member) => (
+            <MemberRow
+              key={member.id}
+              member={member}
+              onEdit={() => setEditor({ member })}
+              onDelete={() => setDeleteTarget(member)}
+            />
+          ))}
+        </ul>
+      </CollectionState>
+
+      <MemberFormModal open={Boolean(editor)} member={editor?.member ?? null} onClose={() => setEditor(null)} />
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={t('admin.members.deleteTitle')}
+        text={
+          <>
+            <strong className="block text-white">{deleteTarget?.fullName}</strong>
+            {t('admin.members.deleteText')}
+          </>
+        }
+        busy={busyId !== null}
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
+    </div>
+  );
+}

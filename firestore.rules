@@ -1,0 +1,85 @@
+rules_version = '2';
+
+// NOVA AI Firestore Security Rules.
+// Publish these in the Firebase console (Firestore Database > Rules) or with `firebase deploy --only firestore:rules`.
+// The admin checks in the React app only hide UI; these rules are what actually protect the data.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Keep this list in sync with ADMIN_EMAILS in src/context/AuthContext.jsx.
+    // email_verified is required so nobody can claim an admin address by signing up with a password they chose.
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in ['omarodat012@gmail.com', 'shahla.alzawahreh33@gmail.com'];
+    }
+
+    function isText(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
+    }
+
+    function isOptionalText(value, maxLength) {
+      return value == null || isText(value, maxLength);
+    }
+
+    function isValidApplication(data) {
+      let fields = ['fullName', 'phone', 'email', 'isStudent', 'major', 'university', 'academicYear', 'subteam',
+        'status', 'createdAt', 'submittedByUid'];
+      return data.keys().hasOnly(fields)
+        && data.keys().hasAll(fields)
+        && isText(data.fullName, 120)
+        && isText(data.phone, 30)
+        && isText(data.email, 200)
+        && data.isStudent is bool
+        && isOptionalText(data.major, 120)
+        && isOptionalText(data.university, 120)
+        && isOptionalText(data.academicYear, 30)
+        && data.subteam in ['projects', 'operations', 'media', 'partnerships', 'education']
+        && data.status == 'pending'
+        && data.createdAt == request.time
+        && (data.submittedByUid == null || (signedIn() && data.submittedByUid == request.auth.uid));
+    }
+
+    // Each signed-in user creates their own profile once, on first login.
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'createdAt'])
+        && request.resource.data.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt == request.time;
+    }
+
+    // Anyone can submit an application; only admins can read or manage them.
+    match /applications/{applicationId} {
+      allow create: if isValidApplication(request.resource.data);
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /members/{memberId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Achievements are shown publicly on the home page.
+    match /achievements/{achievementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // SubTeam leaders are shown publicly on the home page and the SubTeam pages.
+    // One document per SubTeam (document ID = subteam ID), holding the `leaders` list that admins manage.
+    match /subteam_leaders/{subteamId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && subteamId in ['projects', 'operations', 'media', 'partnerships', 'education']
+        && request.resource.data.keys().hasOnly(['leaders', 'updatedAt'])
+        && request.resource.data.leaders is list
+        && request.resource.data.leaders.size() <= 20;
+      allow delete: if isAdmin();
+    }
+  }
+}

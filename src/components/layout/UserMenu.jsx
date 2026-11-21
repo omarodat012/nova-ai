@@ -1,40 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, LayoutDashboard, LogOut } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogOut, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
-import SmartImage from '../ui/SmartImage.jsx';
+import Avatar from '../ui/Avatar.jsx';
 
 function getDisplayName(user) {
   return user.displayName?.trim() || user.email?.split('@')[0] || '';
 }
 
-export function UserAvatar({ user, className = 'size-8 text-sm' }) {
-  const initial = getDisplayName(user).charAt(0).toUpperCase();
-  const fallback = <span aria-hidden="true">{initial}</span>;
-
-  return (
-    <span className={`bg-brand grid shrink-0 place-items-center overflow-hidden rounded-full font-bold text-white ${className}`}>
-      {user.photoURL ? (
-        <SmartImage
-          src={user.photoURL}
-          alt=""
-          referrerPolicy="no-referrer"
-          className="size-full object-cover"
-          fallback={fallback}
-        />
-      ) : (
-        fallback
-      )}
-    </span>
-  );
+// A member's own profile photo wins over the picture that came with their Google account.
+function UserAvatar({ className }) {
+  const { user, memberProfile } = useAuth();
+  return <Avatar photoURL={memberProfile?.photoURL || user.photoURL} name={getDisplayName(user)} className={className} />;
 }
 
 // Shared by the desktop dropdown and the mobile menu panel.
 export function UserMenuItems({ onNavigate }) {
   const { t } = useLanguage();
-  const { user, isAdmin, logOut } = useAuth();
+  const { user, isAdmin, memberProfile, logOut } = useAuth();
   const itemClass =
     'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-sm font-bold transition-colors hover:bg-white/5';
 
@@ -53,7 +38,7 @@ export function UserMenuItems({ onNavigate }) {
   return (
     <>
       <div className="flex items-center gap-3 px-3 py-2.5">
-        <UserAvatar user={user} className="size-10 text-base" />
+        <UserAvatar className="size-10 text-base" />
         <div className="min-w-0">
           <p className="truncate font-bold">{getDisplayName(user)}</p>
           <p dir="ltr" className="truncate text-sm text-muted rtl:text-right">
@@ -61,7 +46,16 @@ export function UserMenuItems({ onNavigate }) {
           </p>
         </div>
       </div>
+      {memberProfile && (
+        <p className="mx-3 mb-2.5 mt-1 flex w-fit animate-glow items-center rounded-full border border-bow/50 bg-[linear-gradient(135deg,rgba(244,114,182,0.2),rgba(124,58,237,0.28))] px-3 py-1 text-xs font-bold">
+          {t('nav.memberBadge')}
+        </p>
+      )}
       <div className="my-1 h-px bg-edge" />
+      <Link to="/profile" role="menuitem" onClick={onNavigate} className={`${itemClass} text-white`}>
+        <UserRound className="size-4 text-logo-blue" />
+        {t('nav.profile')}
+      </Link>
       {isAdmin && (
         <Link to="/admin" role="menuitem" onClick={onNavigate} className={`${itemClass} text-white`}>
           <LayoutDashboard className="size-4 text-logo-blue" />
@@ -110,7 +104,7 @@ export default function UserMenu() {
         aria-label={t('nav.account')}
         className="inline-flex h-10 items-center gap-2 rounded-full border border-edge bg-space/50 ps-1 pe-3 text-sm font-bold text-white transition hover:border-electric hover:bg-electric/10"
       >
-        <UserAvatar user={user} />
+        <UserAvatar />
         <span className="max-w-28 truncate">{getDisplayName(user).split(' ')[0]}</span>
         <ChevronDown className={`size-4 text-muted transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>

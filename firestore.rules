@@ -43,6 +43,36 @@ service cloud.firestore {
         && (data.submittedByUid == null || (signedIn() && data.submittedByUid == request.auth.uid));
     }
 
+    // True when the signed-in account owns this `members` document: its address is verified and matches the
+    // document's email. `emailLower` is what admin writes store; older documents only have `email`.
+    // The app's lookup queries in src/services/membersService.js filter on exactly these fields.
+    function ownsMember(data) {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && (data.emailLower == request.auth.token.email.lower()
+          || data.email == request.auth.token.email
+          || data.email == request.auth.token.email.lower());
+    }
+
+    // Profile photos are small images resized in the browser and stored inline as a data URL.
+    function isValidPhoto(value) {
+      return value == null
+        || (value is string
+          && value.size() <= 100000
+          && value.matches('data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+'));
+    }
+
+    function isValidOwnProfile(data) {
+      return isText(data.fullName, 120)
+        && isOptionalText(data.get('phone', null), 30)
+        && data.get('isStudent', false) is bool
+        && isOptionalText(data.get('major', null), 120)
+        && isOptionalText(data.get('university', null), 120)
+        && isOptionalText(data.get('academicYear', null), 30)
+        && isValidPhoto(data.get('photoURL', null))
+        && data.updatedAt == request.time;
+    }
+
     // Each signed-in user creates their own profile once, on first login.
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
@@ -60,8 +90,16 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Admins manage every member. A member can read their own document and change only their profile fields;
+    // role, subteam, email and emailLower stay under admin control, and members cannot create or delete documents.
     match /members/{memberId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() || ownsMember(resource.data);
+      allow update: if isAdmin()
+        || (ownsMember(resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+            ['fullName', 'phone', 'isStudent', 'major', 'university', 'academicYear', 'photoURL', 'updatedAt'])
+          && isValidOwnProfile(request.resource.data));
+      allow create, delete: if isAdmin();
     }
 
     // Achievements are shown publicly on the home page.

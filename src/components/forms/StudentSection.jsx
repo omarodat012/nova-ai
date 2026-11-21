@@ -46,6 +46,7 @@ export default function StudentSection({ checked, onToggle, fieldProps, label, h
                 icon={BookOpen}
                 label={t('form.major')}
                 type="text"
+                maxLength={120}
                 placeholder={t('form.majorPlaceholder')}
                 {...fieldProps('major')}
               />
@@ -54,6 +55,7 @@ export default function StudentSection({ checked, onToggle, fieldProps, label, h
                 label={t('form.university')}
                 type="text"
                 autoComplete="organization"
+                maxLength={120}
                 placeholder={t('form.universityPlaceholder')}
                 {...fieldProps('university')}
               />

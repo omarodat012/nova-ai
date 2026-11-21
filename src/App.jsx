@@ -7,6 +7,7 @@ import AchievementDetail from './pages/AchievementDetail.jsx';
 import Home from './pages/Home.jsx';
 import Join from './pages/Join.jsx';
 import NotFound from './pages/NotFound.jsx';
+import Profile from './pages/Profile.jsx';
 import SubTeam from './pages/SubTeam.jsx';
 
 // Only admins ever open the dashboard, so its code is loaded on demand.
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="subteam/:id" element={<SubTeam />} />
         <Route path="achievements/:id" element={<AchievementDetail />} />
         <Route path="join" element={<Join />} />
+        <Route path="profile" element={<Profile />} />
         <Route
           path="admin"
           element={

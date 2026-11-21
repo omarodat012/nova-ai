@@ -8,6 +8,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { auth, requireDb } from '../firebase/config.js';
+import { toEmailLower } from './membersService.js';
 
 const APPLICATIONS = 'applications';
 
@@ -41,6 +42,7 @@ export async function approveApplication(id) {
       fullName: application.fullName,
       phone: application.phone,
       email: application.email,
+      emailLower: toEmailLower(application.email),
       subteam: application.subteam,
       role: 'member',
       isStudent: application.isStudent,

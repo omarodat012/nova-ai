@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Send, Trash2, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useSubteams } from '../../context/SubteamsContext.jsx';
 import { isGeminiConfigured } from '../../services/geminiService.js';
 import { NovaAvatar } from '../ui/Brand.jsx';
 import MessageText from './MessageText.jsx';
-import { getNovaReply, QUICK_REPLIES, WELCOME_MESSAGE } from './novaBrain.js';
+import { getNovaReply, getWelcomeMessage, QUICK_REPLIES } from './novaBrain.js';
 
 const NOVA_GRADIENT = 'bg-[linear-gradient(135deg,#F472B6,#7C3AED)]';
 const HEADER_BUTTON =
@@ -60,6 +61,7 @@ function TypingIndicator({ label }) {
 export default function NovaChatbot() {
   const { t, localize } = useLanguage();
   const { subteams } = useSubteams();
+  const { user, memberProfile } = useAuth();
   const [open, setOpen] = useState(false);
   // The conversation only; Nova's welcome bubble is rendered separately so it follows the UI language.
   const [messages, setMessages] = useState([]);
@@ -117,7 +119,7 @@ export default function NovaChatbot() {
     setTyping(true);
 
     try {
-      const reply = await getNovaReply(history, { signal: request.signal, subteams });
+      const reply = await getNovaReply(history, { signal: request.signal, subteams, member: memberProfile, user });
       if (!request.signal.aborted) setMessages((current) => [...current, createMessage('bot', reply)]);
     } catch {
       // Only an aborted request (cleared chat) rejects; there is nothing to show for it.
@@ -176,7 +178,7 @@ export default function NovaChatbot() {
             </header>
 
             <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
-              <Bubble>{localize(WELCOME_MESSAGE)}</Bubble>
+              <Bubble>{localize(getWelcomeMessage(memberProfile))}</Bubble>
               {messages.map((message) =>
                 message.role === 'user' ? (
                   <Bubble key={message.id} fromUser>

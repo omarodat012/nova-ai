@@ -6,10 +6,24 @@ import { generateNovaReply, isGeminiConfigured } from '../../services/geminiServ
 const PHONE = '\u2066+962 7 7682 9501\u2069';
 const HANDLE = '\u2066@nov3_ai\u2069';
 
-export const WELCOME_MESSAGE = {
+const WELCOME_MESSAGE = {
   ar: 'هلا والله! أنا نوڤا 🎀 المساعدة الذكية لفريق NOVA AI.\nاسألني عن الفريق، الأفرقة، الفاوندر، أو كيف تنضم إلنا. شو حابب تعرف؟',
   en: "Hey there! I'm Nova 🎀 NOVA AI's resident robot.\nAsk me about the team, our sub-teams, our founder, or how to join. What would you like to know?",
 };
+
+function getFirstName(member) {
+  return member?.fullName?.trim().split(/\s+/)[0] ?? '';
+}
+
+// Nova's opening bubble: members (`member` is useAuth().memberProfile) are greeted by their first name.
+export function getWelcomeMessage(member) {
+  const name = getFirstName(member);
+  if (!name) return WELCOME_MESSAGE;
+  return {
+    ar: `أهلاً يا ${name}! نورت موقع نوڤا 🎀✨\nكيف بقدر أساعدك اليوم؟`,
+    en: `Hey ${name}! Welcome back to NOVA AI 🎀✨\nHow can I help you today?`,
+  };
+}
 
 export const QUICK_REPLIES = [
   { ar: 'شو هو فريق نوڤا؟', en: 'What is NOVA AI?' },
@@ -19,6 +33,7 @@ export const QUICK_REPLIES = [
 ];
 
 // Checked in order, so more specific intents come first. Arabic keywords are pre-normalized.
+// `memberReply(name)` replaces `reply` when a verified member is chatting.
 const INTENTS = [
   {
     keywords: ['مين انت', 'من انت', 'اسمك', 'روبوت', 'who are you', 'your name', 'robot'],
@@ -39,6 +54,10 @@ const INTENTS = [
     reply: {
       ar: 'يا هلا بالعضو الجديد! ادخل على صفحة الانضمام /join وعبّي النموذج، أو ادخل صفحة أي فريق فرعي وقدّم طلبك من هناك مباشرة.',
       en: 'Love the energy! Head to the Join page at /join and fill in the application form, or open any SubTeam page and apply right there.',
+    },
+    memberReply: {
+      ar: (name) => `يا ${name}، إنت أصلاً واحد من عيلة NOVA AI ✨ بتقدر تشوف بياناتك وتعدّلها من /profile، وإذا في حدا من صحابك حابب ينضم ابعتله /join.`,
+      en: (name) => `${name}, you're already part of the NOVA AI family ✨ You can view and edit your details at /profile, and if a friend wants in, send them to /join.`,
     },
   },
   {
@@ -74,12 +93,20 @@ const INTENTS = [
       ar: 'العفو! هذا شغلي... وما باخذ عليه راتب حتى.',
       en: "You're welcome! It's my job... and I don't even get paid for it.",
     },
+    memberReply: {
+      ar: (name) => `العفو يا ${name}! إحنا فريق واحد... حتى لو أنا الوحيدة اللي ما بتاخذ راتب.`,
+      en: (name) => `Anytime, ${name}! We're teammates... even if I'm the only one who doesn't get paid.`,
+    },
   },
   {
     keywords: ['مرحبا', 'السلام', 'اهلا', 'هلا', 'هاي', 'hi', 'hello', 'hey'],
     reply: {
       ar: 'أهلين وسهلين، نوّرت! اسألني عن الفريق، الفرق الفرعية، أو كيف تنضم إلنا.',
       en: 'Hello hello! Ask me about the team, the sub-teams, or how to join.',
+    },
+    memberReply: {
+      ar: (name) => `أهلين يا ${name}، نوّرت! 🎀 شو بقدر أساعدك اليوم؟`,
+      en: (name) => `Hey ${name}, great to see a teammate! 🎀 What can I help you with today?`,
     },
   },
 ];
@@ -113,26 +140,31 @@ function matches(text, keyword) {
   return text.includes(keyword);
 }
 
-function getLocalReply(message, subteams) {
+function getLocalReply(message, subteams, member) {
   const text = normalize(message);
   const intent = INTENTS.find(({ keywords }) => keywords.some((keyword) => matches(text, keyword)));
   const lang = /[\u0600-\u06FF]/.test(message) ? 'ar' : 'en';
+  const name = getFirstName(member);
 
   if (intent) {
+    if (name && intent.memberReply) return intent.memberReply[lang](name);
     const openTeams = subteams.filter((team) => team.leaders.length === 0).map((team) => team.name[lang]);
     if (!intent.openTeamsNote || openTeams.length === 0) return intent.reply[lang];
     return `${intent.reply[lang]}\n${intent.openTeamsNote[lang](openTeams)}`;
   }
   fallbackCursor += 1;
-  return FALLBACKS[fallbackCursor % FALLBACKS.length][lang];
+  const fallback = FALLBACKS[fallbackCursor % FALLBACKS.length][lang];
+  if (!name) return fallback;
+  return lang === 'ar' ? `يا ${name}، ${fallback}` : `${name}, ${fallback.charAt(0).toLowerCase()}${fallback.slice(1)}`;
 }
 
 // history: [{ role: 'user' | 'bot', text: string }], ending with the user's latest message.
 // `subteams` are the SubTeams with their live leaders (useSubteams()).
-export async function getNovaReply(history, { signal, subteams = defaultSubteams } = {}) {
+// `member` (the chatting member's document, or null) and `user` come from useAuth().
+export async function getNovaReply(history, { signal, subteams = defaultSubteams, member = null, user = null } = {}) {
   if (isGeminiConfigured) {
     try {
-      return await generateNovaReply(history, { signal, subteams });
+      return await generateNovaReply(history, { signal, subteams, member, user });
     } catch (error) {
       if (signal?.aborted) throw error;
       console.warn(`[NOVA AI] Gemini request failed (${error.message}). Nova is using her local replies instead.`);
@@ -140,5 +172,5 @@ export async function getNovaReply(history, { signal, subteams = defaultSubteams
   } else {
     await new Promise((resolve) => setTimeout(resolve, 650 + Math.random() * 650));
   }
-  return getLocalReply(history[history.length - 1].text, subteams);
+  return getLocalReply(history[history.length - 1].text, subteams, member);
 }

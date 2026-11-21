@@ -2,6 +2,7 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, LoaderCircle, LogIn, UserRound } from 'lucide-react';
 import AccountOverview from '../components/profile/AccountOverview.jsx';
+import DisplayNameForm from '../components/profile/DisplayNameForm.jsx';
 import MemberIdCard from '../components/profile/MemberIdCard.jsx';
 import ProfileForm from '../components/profile/ProfileForm.jsx';
 import FirebaseNotice from '../components/ui/FirebaseNotice.jsx';
@@ -113,12 +114,18 @@ export default function Profile() {
               <MemberIdCard member={memberProfile} />
             </div>
             <motion.div
+              className="grid gap-8"
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.12, ease: EASE }}
             >
               {/* Keyed so the form starts from the right document if the account changes while the page is open. */}
               <ProfileForm key={memberProfile.id} member={memberProfile} />
+              <div className="glass rounded-[2rem] p-6 sm:p-9">
+                <h2 className="text-2xl font-bold">{t('profile.displayName.label')}</h2>
+                <p className="mt-1.5 leading-relaxed text-muted">{t('profile.displayName.memberHint')}</p>
+                <DisplayNameForm key={user.uid} className="mt-6" />
+              </div>
             </motion.div>
           </div>
         ) : (

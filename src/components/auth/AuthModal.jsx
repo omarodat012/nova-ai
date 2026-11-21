@@ -8,6 +8,7 @@ import { Logo } from '../ui/Brand.jsx';
 import { GoogleIcon } from '../ui/BrandIcons.jsx';
 import FirebaseNotice from '../ui/FirebaseNotice.jsx';
 import Modal from '../ui/Modal.jsx';
+import VerifyEmailStep from './VerifyEmailStep.jsx';
 
 const MODES = ['login', 'signup'];
 const MIN_PASSWORD_LENGTH = 6;
@@ -57,8 +58,7 @@ function AuthForm({ onSuccess }) {
     setPending(kind);
     setErrorKey(null);
     try {
-      await action();
-      onSuccess();
+      onSuccess(await action());
     } catch (error) {
       const key = getAuthErrorKey(error);
       if (key === 'generic') console.error('[NOVA AI] Sign-in failed.', error);
@@ -190,10 +190,37 @@ function AuthForm({ onSuccess }) {
   );
 }
 
-export default function AuthModal({ open, onClose }) {
+const STEP_MOTION = {
+  initial: { opacity: 0, x: 24 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -24 },
+  transition: { duration: 0.22, ease: 'easeOut' },
+};
+
+// Signing in closes the modal, unless the address still has to be verified: then it moves on to that step.
+function AuthFlow({ initialStep, onClose, onVerified }) {
+  const { user } = useAuth();
+  const [step, setStep] = useState(initialStep);
+  const verifying = step === 'verify' && Boolean(user);
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div key={verifying ? 'verify' : 'form'} {...STEP_MOTION}>
+        {verifying ? (
+          <VerifyEmailStep onVerified={onVerified} />
+        ) : (
+          <AuthForm onSuccess={(signedIn) => (signedIn.emailVerified ? onClose() : setStep('verify'))} />
+        )}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+// `initialStep` is 'form' (log in / sign up) or 'verify' (straight to "Verify your email" for a signed-in account).
+export default function AuthModal({ open, initialStep = 'form', onClose, onVerified }) {
   return (
     <Modal open={open} onClose={onClose} labelledBy="auth-title" className="max-w-md">
-      <AuthForm onSuccess={onClose} />
+      <AuthFlow initialStep={initialStep} onClose={onClose} onVerified={onVerified} />
     </Modal>
   );
 }

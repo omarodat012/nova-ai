@@ -21,6 +21,17 @@ service cloud.firestore {
       return value is string && value.size() > 0 && value.size() <= maxLength;
     }
 
+    function hasVerifiedEmail() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
+    // True for a verified account whose address is on the members list. `member_emails` has one document per
+    // member address (document ID = lowercased email); only admins can write it, so nobody can add themselves.
+    function isMember() {
+      return hasVerifiedEmail()
+        && exists(/databases/$(database)/documents/member_emails/$(request.auth.token.email.lower()));
+    }
+
     function isOptionalText(value, maxLength) {
       return value == null || isText(value, maxLength);
     }
@@ -73,7 +84,7 @@ service cloud.firestore {
         && data.updatedAt == request.time;
     }
 
-    // Each signed-in user creates their own profile once, on first login.
+    // Each signed-in user creates their own profile once, on first login, and may rename themselves afterwards.
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow create: if signedIn()
@@ -82,6 +93,11 @@ service cloud.firestore {
         && request.resource.data.uid == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.createdAt == request.time;
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'updatedAt'])
+        && isText(request.resource.data.displayName, 80)
+        && request.resource.data.updatedAt == request.time;
     }
 
     // Anyone can submit an application; only admins can read or manage them.
@@ -92,14 +108,32 @@ service cloud.firestore {
 
     // Admins manage every member. A member can read their own document and change only their profile fields;
     // role, subteam, email and emailLower stay under admin control, and members cannot create or delete documents.
+    // Verified NOVA AI members can also read the other members, which is what the SubTeam rosters are built from.
+    // Guests and accounts that are not members cannot read anyone.
     match /members/{memberId} {
-      allow read: if isAdmin() || ownsMember(resource.data);
+      allow read: if isAdmin() || ownsMember(resource.data) || isMember();
       allow update: if isAdmin()
         || (ownsMember(resource.data)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
             ['fullName', 'phone', 'isStudent', 'major', 'university', 'academicYear', 'photoURL', 'updatedAt'])
           && isValidOwnProfile(request.resource.data));
       allow create, delete: if isAdmin();
+    }
+
+    // The members lookup behind isMember(). The app keeps it in sync with `members` from the admin dashboard.
+    match /member_emails/{emailLower} {
+      allow read, write: if isAdmin();
+    }
+
+    // What members see on the SubTeam rosters: one switch per SubTeam plus the "show member details" switch.
+    match /settings/rosterVisibility {
+      allow read: if hasVerifiedEmail();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['showRoster', 'showMemberDetails', 'updatedAt'])
+        && request.resource.data.showRoster is map
+        && request.resource.data.showRoster.keys().hasOnly(['projects', 'operations', 'media', 'partnerships', 'education'])
+        && request.resource.data.showMemberDetails is bool;
+      allow delete: if isAdmin();
     }
 
     // Achievements are shown publicly on the home page.

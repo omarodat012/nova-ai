@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ListFilter, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { getRoleById } from '../../data/memberRoles.js';
 import { useAdminAction } from '../../hooks/useAdminAction.js';
-import { deleteMember } from '../../services/membersService.js';
+import { deleteMember, syncMemberEmails } from '../../services/membersService.js';
 import {
   ActionAlert,
   CollectionState,
@@ -16,6 +16,7 @@ import {
   SubteamFilterOptions,
 } from './AdminBits.jsx';
 import MemberFormModal from './MemberFormModal.jsx';
+import RosterSettingsBar from './RosterSettingsBar.jsx';
 
 function matchesSearch(member, search) {
   const needle = search.trim().toLowerCase();
@@ -80,18 +81,34 @@ export default function MembersTab({ collection }) {
   const [editor, setEditor] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const { busyId, errorKey, run } = useAdminAction();
+  const [syncFailed, setSyncFailed] = useState(false);
+
+  // Opening the tab repairs `member_emails`, the lookup firestore.rules uses to recognize members (members added
+  // before it existed have no entry yet). It waits for the real list: syncing against an empty one would wipe it.
+  const ready = !collection.loading && !collection.error;
+  const members = collection.items;
+  useEffect(() => {
+    if (!ready) return;
+    syncMemberEmails(members).catch((error) => {
+      console.error('[NOVA AI] Could not sync the members lookup.', error);
+      setSyncFailed(true);
+    });
+    // Once per visit to the tab; later adds, edits and deletes keep the lookup up to date themselves.
+  }, [ready]);
 
   const visible = collection.items
     .filter((member) => (!subteam || member.subteam === subteam) && matchesSearch(member, search))
     .sort(byName);
 
   const confirmDelete = async () => {
-    await run(deleteTarget.id, () => deleteMember(deleteTarget.id));
+    await run(deleteTarget.id, () => deleteMember(deleteTarget.id, deleteTarget.emailLower ?? deleteTarget.email));
     setDeleteTarget(null);
   };
 
   return (
     <div>
+      <RosterSettingsBar />
+
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput value={search} onChange={setSearch} placeholder={t('admin.members.search')} />
         <FilterSelect icon={ListFilter} label={t('admin.common.subteamFilter')} value={subteam} onChange={setSubteam}>
@@ -103,7 +120,7 @@ export default function MembersTab({ collection }) {
         </button>
       </div>
 
-      <ActionAlert errorKey={errorKey} />
+      <ActionAlert errorKey={errorKey ?? (syncFailed ? 'permission' : null)} />
 
       <CollectionState
         collection={collection}

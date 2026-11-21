@@ -1,38 +1,16 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CircleAlert, LoaderCircle, Mail, MailCheck, RefreshCw, Rocket, Sparkles, User } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext.jsx';
+import { Mail, MailCheck, Rocket, Sparkles } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
-import { getAuthErrorKey } from '../../firebase/authErrors.js';
 import Avatar from '../ui/Avatar.jsx';
+import DisplayNameForm from './DisplayNameForm.jsx';
 
 const EASE = [0.22, 1, 0.36, 1];
 
 // Member documents are only readable by a verified address, so a password account must verify before it can be recognized.
 function VerifyEmailNotice() {
   const { t } = useLanguage();
-  const { sendVerificationEmail, refreshMemberProfile } = useAuth();
-  // 'idle' | 'sending' | 'sent' | 'checking' | 'pending' | { errorKey }
-  const [state, setState] = useState('idle');
-  const busy = state === 'sending' || state === 'checking';
-
-  const handleSend = async () => {
-    setState('sending');
-    try {
-      await sendVerificationEmail();
-      setState('sent');
-    } catch (error) {
-      setState({ errorKey: getAuthErrorKey(error) ?? 'generic' });
-    }
-  };
-
-  // Once the address is verified this notice is unmounted, so reaching 'pending' means it still is not.
-  const handleCheck = async () => {
-    setState('checking');
-    await refreshMemberProfile();
-    setState('pending');
-  };
+  const { openVerifyEmail } = useOutletContext();
 
   return (
     <div className="rounded-2xl border border-amber-300/35 bg-amber-300/10 p-5 text-start">
@@ -41,29 +19,10 @@ function VerifyEmailNotice() {
         {t('profile.verify.title')}
       </p>
       <p className="mt-2 text-sm leading-relaxed text-white/90">{t('profile.verify.text')}</p>
-
-      <div className="mt-4 flex flex-wrap gap-2.5">
-        <button type="button" onClick={handleSend} disabled={busy} className="btn btn-ghost btn-sm disabled:cursor-wait">
-          {state === 'sending' ? <LoaderCircle className="size-4 animate-spin" /> : <Mail className="size-4" />}
-          {t('profile.verify.send')}
-        </button>
-        <button type="button" onClick={handleCheck} disabled={busy} className="btn btn-ghost btn-sm disabled:cursor-wait">
-          {state === 'checking' ? <LoaderCircle className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-          {t('profile.verify.check')}
-        </button>
-      </div>
-
-      {(state === 'sent' || state === 'pending') && (
-        <p role="status" className="mt-3 text-sm font-medium text-white/90">
-          {t(`profile.verify.${state}`)}
-        </p>
-      )}
-      {state.errorKey && (
-        <p role="alert" className="mt-3 flex items-start gap-2 text-sm font-medium text-bow">
-          <CircleAlert className="mt-0.5 size-4 shrink-0" />
-          {t(`auth.errors.${state.errorKey}`)}
-        </p>
-      )}
+      <button type="button" onClick={openVerifyEmail} className="btn btn-ghost btn-sm mt-4">
+        <MailCheck className="size-4" />
+        {t('profile.verify.cta')}
+      </button>
     </div>
   );
 }
@@ -108,14 +67,12 @@ export default function AccountOverview({ user }) {
             <h1 className="text-2xl font-extrabold leading-snug [overflow-wrap:anywhere]">{name}</h1>
           </div>
         </div>
-        <dl className="relative mt-6 divide-y divide-edge rounded-2xl border border-edge bg-space/50">
-          <AccountRow icon={User} label={t('profile.account.name')}>
-            {name}
-          </AccountRow>
+        <dl className="relative mt-6 rounded-2xl border border-edge bg-space/50">
           <AccountRow icon={Mail} label={t('profile.account.email')} dir="ltr">
             {user.email}
           </AccountRow>
         </dl>
+        <DisplayNameForm key={user.uid} hint={t('profile.displayName.hint')} className="relative mt-6" />
       </motion.div>
 
       <motion.div

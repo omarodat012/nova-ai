@@ -8,9 +8,10 @@ import {
   signOut,
   updateProfile,
 } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { FirebaseNotConfiguredError, auth, db, googleProvider, isFirebaseConfigured } from '../firebase/config.js';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { FirebaseNotConfiguredError, auth, db, googleProvider, isFirebaseConfigured, requireDb } from '../firebase/config.js';
 import { findMemberByEmail } from '../services/membersService.js';
+import { useLanguage } from './LanguageContext.jsx';
 
 // Keep this list in sync with isAdmin() in firestore.rules, which is what actually enforces access.
 const ADMIN_EMAILS = ['omarodat012@gmail.com', 'shahla.alzawahreh33@gmail.com'];
@@ -26,17 +27,21 @@ function toUser(firebaseUser) {
   return { uid, email, displayName, photoURL, emailVerified };
 }
 
+function newUserProfile(firebaseUser) {
+  return {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email,
+    displayName: firebaseUser.displayName ?? null,
+    createdAt: serverTimestamp(),
+  };
+}
+
 // Creates users/{uid} the first time someone signs in; later logins leave the document untouched.
 async function ensureUserProfile(firebaseUser) {
   try {
     const profileRef = doc(db, 'users', firebaseUser.uid);
     if ((await getDoc(profileRef)).exists()) return;
-    await setDoc(profileRef, {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName ?? null,
-      createdAt: serverTimestamp(),
-    });
+    await setDoc(profileRef, newUserProfile(firebaseUser));
   } catch (error) {
     // A profile write must never block sign-in (e.g. when the Firestore rules are not published yet).
     console.warn('[NOVA AI] Could not sync the user profile to Firestore.', error);
@@ -48,30 +53,42 @@ function requireAuth() {
   return auth;
 }
 
+// Resolves to { user, verificationSent }. A failed email never fails the sign-up: the link can be sent again.
 async function signUp({ displayName, email, password }) {
   const { user } = await createUserWithEmailAndPassword(requireAuth(), email.trim(), password);
+  // The name is saved first so the verification email can greet the person by name.
   await updateProfile(user, { displayName: displayName.trim() });
+  const verificationSent = await sendEmailVerification(user).then(
+    () => true,
+    (error) => {
+      console.warn('[NOVA AI] Could not send the verification email.', error);
+      return false;
+    },
+  );
   await ensureUserProfile(user);
-  return user;
+  return { user, verificationSent };
 }
 
 async function logIn({ email, password }) {
   const { user } = await signInWithEmailAndPassword(requireAuth(), email.trim(), password);
   await ensureUserProfile(user);
-  return user;
+  return { user };
 }
 
 async function logInWithGoogle() {
   const { user } = await signInWithPopup(requireAuth(), googleProvider);
   await ensureUserProfile(user);
-  return user;
+  return { user };
 }
 
 export function AuthProvider({ children }) {
+  const { lang } = useLanguage();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(isFirebaseConfigured);
   // The last members lookup, tagged with the account it was made for: { uid, profile }.
   const [membership, setMembership] = useState(null);
+  // When the last verification email went out, tagged the same way: { uid, at }. Drives the "Resend" cooldown.
+  const [verificationSent, setVerificationSent] = useState(null);
 
   useEffect(() => {
     if (!auth) return undefined;
@@ -80,6 +97,11 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
   }, []);
+
+  // Firebase writes its emails (verification links) in this language.
+  useEffect(() => {
+    if (auth) auth.languageCode = lang;
+  }, [lang]);
 
   // Looks the signed-in account up in the `members` collection and resolves to the member document or null.
   const refreshMemberProfile = useCallback(async () => {
@@ -108,6 +130,42 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Asks Firebase whether the verification link has been opened. Resolves to { verified, member }, where `member`
+  // is the account's `members` document when it turns out to belong to a NOVA AI member.
+  const confirmEmailVerified = useCallback(async () => {
+    const current = requireAuth().currentUser;
+    if (!current) return { verified: false, member: null };
+
+    await current.reload();
+    if (!current.emailVerified) return { verified: false, member: null };
+
+    // The ID token still says "unverified" until it is refreshed, and firestore.rules reads the token.
+    await current.getIdToken(true);
+    setUser(toUser(current));
+    return { verified: true, member: await refreshMemberProfile() };
+  }, [refreshMemberProfile]);
+
+  const sendVerificationEmail = useCallback(async () => {
+    const current = requireAuth().currentUser;
+    await sendEmailVerification(current);
+    setVerificationSent({ uid: current.uid, at: Date.now() });
+  }, []);
+
+  // Renames the signed-in account: users/{uid} in Firestore, then Firebase Auth, then the name shown in the navbar.
+  const updateDisplayName = useCallback(async (name) => {
+    const current = requireAuth().currentUser;
+    const displayName = name.trim();
+    const profileRef = doc(requireDb(), 'users', current.uid);
+
+    if ((await getDoc(profileRef)).exists()) {
+      await updateDoc(profileRef, { displayName, updatedAt: serverTimestamp() });
+    } else {
+      await setDoc(profileRef, { ...newUserProfile(current), displayName });
+    }
+    await updateProfile(current, { displayName });
+    setUser(toUser(current));
+  }, []);
+
   const uid = user?.uid;
   useEffect(() => {
     if (uid) refreshMemberProfile();
@@ -115,8 +173,13 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => {
     // The auth listener fires before updateProfile() and popup linking finish, so re-read the user afterwards.
+    // Resolves to the signed-in user, so the caller can tell whether the email still needs verifying.
     const refreshAfter = (action) => async (credentials) => {
-      setUser(toUser(await action(credentials)));
+      const result = await action(credentials);
+      const signedIn = toUser(result.user);
+      setUser(signedIn);
+      if (result.verificationSent) setVerificationSent({ uid: signedIn.uid, at: Date.now() });
+      return signedIn;
     };
     const hasAdminEmail = isAdminEmail(user?.email);
     const memberChecked = Boolean(user) && membership?.uid === user.uid;
@@ -132,13 +195,17 @@ export function AuthProvider({ children }) {
       memberProfile: memberChecked ? membership.profile : null,
       memberLoading: Boolean(user) && !memberChecked,
       refreshMemberProfile,
-      sendVerificationEmail: () => sendEmailVerification(requireAuth().currentUser),
+      // Timestamp (ms) of the last verification email sent to this account in this session, or null.
+      verificationSentAt: user && verificationSent?.uid === user.uid ? verificationSent.at : null,
+      sendVerificationEmail,
+      confirmEmailVerified,
+      updateDisplayName,
       signUp: refreshAfter(signUp),
       logIn: refreshAfter(logIn),
       logInWithGoogle: refreshAfter(logInWithGoogle),
       logOut: () => signOut(requireAuth()),
     };
-  }, [user, loading, membership, refreshMemberProfile]);
+  }, [user, loading, membership, verificationSent, refreshMemberProfile, sendVerificationEmail, confirmEmailVerified, updateDisplayName]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

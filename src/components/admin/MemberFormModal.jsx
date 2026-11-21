@@ -82,7 +82,9 @@ function MemberForm({ member, onClose }) {
 
     setStatus('saving');
     try {
-      await (member ? updateMember(member.id, toMember(values)) : addMember(toMember(values)));
+      await (member
+        ? updateMember(member.id, toMember(values), member.emailLower ?? member.email)
+        : addMember(toMember(values)));
       onClose();
     } catch (error) {
       console.error('[NOVA AI] Could not save the member.', error);

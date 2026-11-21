@@ -4,6 +4,7 @@ import MembershipForm from '../components/MembershipForm.jsx';
 import TeamHero from '../components/subteams/TeamHero.jsx';
 import TeamLeadership from '../components/subteams/TeamLeadership.jsx';
 import TeamResponsibilities from '../components/subteams/TeamResponsibilities.jsx';
+import TeamRoster from '../components/subteams/TeamRoster.jsx';
 import SectionHeading from '../components/ui/SectionHeading.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { useSubteams } from '../context/SubteamsContext.jsx';
@@ -41,6 +42,8 @@ export default function SubTeam() {
           </div>
           <TeamLeadership team={team} />
         </div>
+
+        <TeamRoster team={team} />
 
         <section id="apply" className="mt-20 scroll-mt-28">
           <SectionHeading

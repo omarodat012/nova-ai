@@ -98,6 +98,14 @@ export const translations = {
       applyTitle: 'قدّم طلبك للانضمام',
       applyText: 'اخترنا لك هذا الفريق مسبقاً في النموذج، ويمكنك تغييره لأي فريق آخر بكل حرية.',
       photoAlt: 'صورة',
+      roster: {
+        title: 'أعضاء الفريق',
+        you: 'أنت',
+        membersOnly: 'يظهر لأعضاء NOVA AI فقط',
+        hiddenNote: 'هذه القائمة مخفية عن الأعضاء حالياً وتظهر للمشرفين فقط. يمكنك إظهارها من إعدادات لوحة التحكم.',
+        empty: 'لم يُضَف أعضاء إلى هذا الفريق بعد.',
+        error: 'تعذّر تحميل قائمة الأعضاء. حدّث الصفحة وحاول مجدداً.',
+      },
     },
     achievements: {
       eyebrow: 'الإنجازات والفعاليات',
@@ -161,6 +169,29 @@ export const translations = {
         nameRequired: 'اكتب اسمك الكامل لإنشاء الحساب.',
         generic: 'حدث خطأ غير متوقع. حاول مرة أخرى.',
       },
+      verify: {
+        title: 'تحقق من بريدك الإلكتروني',
+        sentTo: 'أرسلنا رابط التوثيق إلى:',
+        notVerified: 'هذا البريد لم يُوثَّق بعد:',
+        instructions: 'افتح الرسالة التي وصلتك واضغط على رابط التوثيق، ثم عُد إلى هنا واضغط «تحققت من بريدي — متابعة».',
+        spam: 'لم تجد الرسالة؟ تفقّد مجلد الرسائل غير المرغوب فيها (\u2066Spam / Junk\u2069)، أو اطلب رابطاً جديداً.',
+        membershipNote: 'إن كان بريدك مسجّلاً ضمن أعضاء NOVA AI، تُفعَّل عضويتك تلقائياً فور التوثيق.',
+        continue: 'تحققت من بريدي — متابعة',
+        resend: 'إعادة إرسال الرابط',
+        resendIn: 'إعادة الإرسال بعد',
+        seconds: 'ث',
+        resent: 'أرسلنا رابطاً جديداً إلى بريدك.',
+        pending: 'لم يُوثَّق بريدك بعد. افتح الرابط الذي وصلك ثم حاول مرة أخرى.',
+        bannerTitle: 'بريدك الإلكتروني غير موثَّق',
+        bannerText: 'وثّقه لتُفعَّل عضويتك في NOVA AI.',
+        bannerCta: 'تحقق الآن',
+        dismiss: 'إخفاء التنبيه',
+      },
+      toast: {
+        welcome: 'أهلاً بك في NOVA AI!',
+        verified: 'تم توثيق بريدك الإلكتروني بنجاح.',
+        member: 'تم توثيق بريدك والتعرّف عليك عضواً في NOVA AI.',
+      },
     },
     firebase: {
       title: 'Firebase غير مهيأ بعد',
@@ -202,6 +233,18 @@ export const translations = {
           'قاعدة البيانات رفضت الطلب. تأكد من نشر قواعد الحماية \u2066firestore.rules\u2069 ومن أن بريدك ضمن قائمة المشرفين.',
         action: 'تعذّر تنفيذ العملية. حاول مرة أخرى.',
         alreadyReviewed: 'تمت مراجعة هذا الطلب مسبقاً.',
+      },
+      roster: {
+        title: 'إعدادات ظهور قوائم الأعضاء',
+        hint: 'تحكّم بما يراه أعضاء NOVA AI الموثَّقون في قسم «أعضاء الفريق» داخل صفحات الفرق الفرعية. المشرفون يرون القوائم دائماً.',
+        visibleCount: 'القوائم الظاهرة',
+        detailsOn: 'التفاصيل ظاهرة',
+        detailsOff: 'التفاصيل مخفية',
+        rostersLabel: 'إظهار قائمة الأعضاء في صفحة الفريق',
+        details: 'إظهار تفاصيل الأعضاء',
+        detailsHint:
+          'عند الإيقاف يرى الأعضاء الاسم والصورة والدور فقط. عند التفعيل يرون أيضاً الهاتف والبريد والتخصص والجامعة والسنة الدراسية.',
+        autosave: 'تُحفَظ التغييرات فوراً.',
       },
       members: {
         add: 'إضافة عضو جديد',
@@ -385,8 +428,16 @@ export const translations = {
       },
       account: {
         title: 'بيانات الحساب',
-        name: 'الاسم',
         email: 'البريد الإلكتروني',
+      },
+      displayName: {
+        label: 'الاسم الظاهر',
+        placeholder: 'الاسم الذي يظهر في حسابك',
+        hint: 'يظهر هذا الاسم في الشريط العلوي وقائمة حسابك.',
+        memberHint: 'الاسم الذي يظهر في الشريط العلوي وقائمة حسابك. تغييره لا يغيّر اسمك الكامل في بطاقة العضوية.',
+        save: 'حفظ الاسم',
+        saved: 'تم تحديث اسمك الظاهر ✨',
+        error: 'تعذّر حفظ الاسم. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.',
       },
       notMember: {
         title: 'لست عضواً رسمياً بعد',
@@ -396,10 +447,7 @@ export const translations = {
       verify: {
         title: 'وثّق بريدك الإلكتروني',
         text: 'نعرض بطاقة العضوية للبريد الموثَّق فقط. إن كنت عضواً في الفريق، وثّق بريدك لتظهر بطاقتك.',
-        send: 'أرسل رابط التوثيق',
-        sent: 'أرسلنا رابط التوثيق إلى بريدك. افتحه ثم اضغط «تحقّق الآن».',
-        check: 'تحقّق الآن',
-        pending: 'لم يُوثَّق بريدك بعد. افتح الرابط الذي وصلك ثم حاول مرة أخرى.',
+        cta: 'تحقق الآن',
       },
     },
     notFound: {
@@ -508,6 +556,15 @@ export const translations = {
       applyTitle: 'Apply to join',
       applyText: "We've pre-selected this team in the form, and you're free to switch to any other one.",
       photoAlt: 'Photo of',
+      roster: {
+        title: 'Team Members',
+        you: 'You',
+        membersOnly: 'Visible to NOVA AI members only',
+        hiddenNote:
+          'This list is currently hidden from members and only admins can see it. You can turn it on from the dashboard settings.',
+        empty: 'No members have been added to this team yet.',
+        error: "Couldn't load the members list. Refresh the page and try again.",
+      },
     },
     achievements: {
       eyebrow: 'Achievements & Events',
@@ -573,6 +630,30 @@ export const translations = {
         nameRequired: 'Enter your full name to create an account.',
         generic: 'Something went wrong. Please try again.',
       },
+      verify: {
+        title: 'Verify Your Email',
+        sentTo: 'We sent a verification link to:',
+        notVerified: "This email hasn't been verified yet:",
+        instructions:
+          'Open the email we sent you and click the verification link, then come back here and press "I\'ve Verified — Continue".',
+        spam: "Can't find it? Check your Spam / Junk folder, or request a new link.",
+        membershipNote: 'If your email is on the NOVA AI members list, your membership activates as soon as you verify.',
+        continue: "I've Verified — Continue",
+        resend: 'Resend Link',
+        resendIn: 'Resend in',
+        seconds: 's',
+        resent: 'We sent a new link to your email.',
+        pending: "Your email isn't verified yet. Open the link we sent you, then try again.",
+        bannerTitle: "Your email isn't verified",
+        bannerText: 'Verify it to activate your NOVA AI membership.',
+        bannerCta: 'Verify now',
+        dismiss: 'Dismiss',
+      },
+      toast: {
+        welcome: 'Welcome to NOVA AI!',
+        verified: 'Your email has been verified.',
+        member: "Your email is verified and you're recognised as a NOVA AI member.",
+      },
     },
     firebase: {
       title: "Firebase isn't configured yet",
@@ -615,6 +696,18 @@ export const translations = {
           'The database refused the request. Make sure firestore.rules is published and your email is on the admin list.',
         action: "That didn't go through. Please try again.",
         alreadyReviewed: 'This application has already been reviewed.',
+      },
+      roster: {
+        title: 'Roster visibility settings',
+        hint: 'Control what verified NOVA AI members see in the "Team Members" section of each SubTeam page. Admins always see the lists.',
+        visibleCount: 'Rosters visible',
+        detailsOn: 'Details shown',
+        detailsOff: 'Details hidden',
+        rostersLabel: 'Show the members list on the team page',
+        details: 'Show member details',
+        detailsHint:
+          "When off, members only see each other's name, photo and role. When on, they also see phone, email, major, university and academic year.",
+        autosave: 'Changes are saved instantly.',
       },
       members: {
         add: 'Add Existing Member',
@@ -798,8 +891,17 @@ export const translations = {
       },
       account: {
         title: 'Account details',
-        name: 'Name',
         email: 'Email',
+      },
+      displayName: {
+        label: 'Display Name',
+        placeholder: 'The name shown on your account',
+        hint: 'This name appears in the top bar and in your account menu.',
+        memberHint:
+          'The name shown in the top bar and your account menu. Changing it does not change the full name on your member card.',
+        save: 'Save name',
+        saved: 'Your display name was updated ✨',
+        error: 'Your name could not be saved. Check your connection and try again.',
       },
       notMember: {
         title: 'You are not an official member yet',
@@ -809,10 +911,7 @@ export const translations = {
       verify: {
         title: 'Verify your email',
         text: 'Member cards are only shown for a verified email. If you are already on the team, verify your email to see yours.',
-        send: 'Send verification link',
-        sent: 'We sent a verification link to your email. Open it, then press "Check now".',
-        check: 'Check now',
-        pending: 'Your email is not verified yet. Open the link we sent you, then try again.',
+        cta: 'Verify now',
       },
     },
     notFound: {

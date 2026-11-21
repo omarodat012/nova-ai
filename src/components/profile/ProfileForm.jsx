@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Camera, CircleAlert, CircleCheck, LoaderCircle, Phone, Save, Trash2, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
@@ -10,6 +10,7 @@ import { isValidPhone, toLatinDigits } from '../../utils/validation.js';
 import { TextField } from '../forms/FormFields.jsx';
 import StudentSection, { STUDENT_FIELDS } from '../forms/StudentSection.jsx';
 import Avatar from '../ui/Avatar.jsx';
+import FormMessage from './FormMessage.jsx';
 
 const FIELD_ORDER = ['fullName', 'phone', ...STUDENT_FIELDS];
 
@@ -49,27 +50,6 @@ function toProfile(values, photoURL) {
     academicYear: values.isStudent ? values.academicYear : null,
     photoURL,
   };
-}
-
-function Message({ tone, icon: Icon, children }) {
-  const tones = {
-    success: 'border-emerald-400/40 bg-emerald-400/10 [&>svg]:text-emerald-300',
-    error: 'border-bow/40 bg-bow/10 [&>svg]:text-bow',
-  };
-
-  return (
-    <motion.p
-      role={tone === 'error' ? 'alert' : 'status'}
-      className={`flex items-start gap-2.5 rounded-2xl border px-4 py-3 text-sm font-medium leading-relaxed ${tones[tone]}`}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-    >
-      <Icon className="mt-0.5 size-4 shrink-0" />
-      {children}
-    </motion.p>
-  );
 }
 
 // Lets a member edit their own details. `member` is their saved `members` document ({ id, ...fields }).
@@ -203,14 +183,14 @@ export default function ProfileForm({ member }) {
 
           <AnimatePresence mode="wait" initial={false}>
             {(status === 'permission' || status === 'save') && (
-              <Message key="error" tone="error" icon={CircleAlert}>
+              <FormMessage key="error" tone="error" icon={CircleAlert}>
                 {t(`profile.errors.${status}`)}
-              </Message>
+              </FormMessage>
             )}
             {status === 'saved' && !dirty && (
-              <Message key="saved" tone="success" icon={CircleCheck}>
+              <FormMessage key="saved" tone="success" icon={CircleCheck}>
                 {t('profile.form.saved')}
-              </Message>
+              </FormMessage>
             )}
           </AnimatePresence>
 

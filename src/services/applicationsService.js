@@ -8,7 +8,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { auth, requireDb } from '../firebase/config.js';
-import { toEmailLower } from './membersService.js';
+import { memberEmailData, memberEmailRef, toEmailLower } from './membersService.js';
 
 const APPLICATIONS = 'applications';
 
@@ -22,7 +22,7 @@ export async function submitApplication(formData) {
   return { id: reference.id, ...application };
 }
 
-// Marks the application approved and adds the applicant to `members` in one atomic write.
+// Marks the application approved and adds the applicant to `members` (and `member_emails`) in one atomic write.
 // The transaction re-reads the application, so two admins approving at once cannot create two members.
 export async function approveApplication(id) {
   const db = requireDb();
@@ -52,6 +52,9 @@ export async function approveApplication(id) {
       applicationId: id,
       createdAt: serverTimestamp(),
     });
+
+    const lookup = memberEmailRef(db, application.email);
+    if (lookup) transaction.set(lookup, memberEmailData());
   });
 }
 

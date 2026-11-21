@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, Building2, CalendarDays, GraduationCap } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { academicYears } from '../../data/academicYears.js';
+import SwitchTrack from '../ui/SwitchTrack.jsx';
 import { SelectField, TextField } from './FormFields.jsx';
 
 export const STUDENT_FIELDS = ['major', 'university', 'academicYear'];
@@ -25,10 +26,7 @@ export default function StudentSection({ checked, onToggle, fieldProps, label, h
           </span>
         </span>
         <input type="checkbox" name="isStudent" checked={checked} onChange={onToggle} className="peer sr-only" />
-        <span
-          aria-hidden="true"
-          className="relative h-7 w-12 shrink-0 rounded-full bg-space ring-1 ring-edge transition-colors after:absolute after:start-1 after:top-1 after:size-5 after:rounded-full after:bg-white after:transition-transform peer-checked:bg-[image:var(--gradient-brand)] peer-checked:ring-transparent peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-electric ltr:peer-checked:after:translate-x-5 rtl:peer-checked:after:-translate-x-5"
-        />
+        <SwitchTrack />
       </label>
 
       <AnimatePresence initial={false}>

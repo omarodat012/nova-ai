@@ -10,8 +10,9 @@ function getInitials(name, lang) {
   return `${words[0][0]}${words.length > 1 ? words.at(-1)[0] : ''}`.toUpperCase();
 }
 
+// One icon + value row under a person's name (also used by the members roster).
 // `showLabel` spells the label out for values that are unclear on their own (e.g. "First Year").
-function LeaderDetail({ icon: Icon, label, showLabel = false, href, dir, children }) {
+export function PersonDetail({ icon: Icon, label, showLabel = false, href, dir, children }) {
   const text = (
     <span dir={dir} className="min-w-0 [overflow-wrap:anywhere]">
       {children}
@@ -103,9 +104,9 @@ function LeaderCard({ leader }) {
       {details.length > 0 && (
         <ul className="mt-4 space-y-2.5 border-t border-edge pt-4 text-sm text-muted">
           {details.map(({ id, value, ...detail }) => (
-            <LeaderDetail key={id} {...detail}>
+            <PersonDetail key={id} {...detail}>
               {value}
-            </LeaderDetail>
+            </PersonDetail>
           ))}
         </ul>
       )}

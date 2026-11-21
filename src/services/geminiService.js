@@ -3,7 +3,7 @@ import { getRoleById } from '../data/memberRoles.js';
 import { subteams as defaultSubteams } from '../data/subteams.js';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY?.trim();
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-3.1-flash-lite';
 const HISTORY_LIMIT = 10;
 const TIMEOUT_MS = 30000;
 

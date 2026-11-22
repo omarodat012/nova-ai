@@ -4,6 +4,7 @@ import { LoaderCircle } from 'lucide-react';
 import ProtectedAdminRoute from './components/admin/ProtectedAdminRoute.jsx';
 import Layout from './components/layout/Layout.jsx';
 import AchievementDetail from './pages/AchievementDetail.jsx';
+import Feedback from './pages/Feedback.jsx';
 import Home from './pages/Home.jsx';
 import Join from './pages/Join.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="achievements/:id" element={<AchievementDetail />} />
         <Route path="join" element={<Join />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="feedback" element={<Feedback />} />
         <Route
           path="admin"
           element={

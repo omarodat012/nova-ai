@@ -153,5 +153,28 @@ service cloud.firestore {
         && request.resource.data.leaders.size() <= 20;
       allow delete: if isAdmin();
     }
+
+    // Any signed-in account can send feedback under its own uid; only admins can read, review or delete it.
+    function isValidFeedback(data) {
+      let fields = ['uid', 'userName', 'userEmail', 'isMember', 'category', 'message', 'status', 'createdAt'];
+      return data.keys().hasOnly(fields)
+        && data.keys().hasAll(fields)
+        && data.uid == request.auth.uid
+        && isOptionalText(data.userName, 120)
+        && (data.userEmail == null || data.userEmail == request.auth.token.email)
+        && data.isMember is bool
+        && data.category in ['suggestion', 'opinion', 'event', 'other']
+        && isText(data.message, 3000)
+        && data.status == 'new'
+        && data.createdAt == request.time;
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if signedIn() && isValidFeedback(request.resource.data);
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt'])
+        && request.resource.data.status in ['new', 'reviewed'];
+    }
   }
 }

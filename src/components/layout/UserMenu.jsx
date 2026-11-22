@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, LayoutDashboard, LogOut, UserRound } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogOut, MessageSquareHeart, UserRound } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import Avatar from '../ui/Avatar.jsx';
@@ -55,6 +55,10 @@ export function UserMenuItems({ onNavigate }) {
       <Link to="/profile" role="menuitem" onClick={onNavigate} className={`${itemClass} text-white`}>
         <UserRound className="size-4 text-logo-blue" />
         {t('nav.profile')}
+      </Link>
+      <Link to="/feedback" role="menuitem" onClick={onNavigate} className={`${itemClass} text-white`}>
+        <MessageSquareHeart className="size-4 text-logo-blue" />
+        {t('nav.feedback')}
       </Link>
       {isAdmin && (
         <Link to="/admin" role="menuitem" onClick={onNavigate} className={`${itemClass} text-white`}>

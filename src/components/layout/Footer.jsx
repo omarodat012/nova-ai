@@ -34,6 +34,11 @@ export default function Footer() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link to="/feedback" className="text-muted transition-colors hover:text-electric">
+                {t('nav.feedback')}
+              </Link>
+            </li>
           </ul>
         </nav>
 

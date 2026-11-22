@@ -1,4 +1,5 @@
-import { QrCode } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, MessageSquareHeart, QrCode } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { SOCIAL_LINKS } from '../../data/links.js';
 import { InstagramIcon } from '../ui/BrandIcons.jsx';
@@ -74,6 +75,21 @@ export default function Contact() {
                   <span aria-hidden="true" className="size-1 rounded-full bg-logo-blue" />
                   <span dir="ltr">{SOCIAL_LINKS.whatsapp.display}</span>
                 </p>
+              </Reveal>
+              <Reveal delay={0.2}>
+                <Link
+                  to="/feedback"
+                  className="group/fb mt-8 flex items-center gap-4 rounded-3xl border border-edge bg-space/60 p-4 transition duration-300 hover:-translate-y-1 hover:border-bow/60 hover:shadow-[0_0_50px_-16px_rgba(244,114,182,0.8)] sm:p-5"
+                >
+                  <span className="grid size-13 shrink-0 place-items-center rounded-2xl border border-bow/40 bg-bow/15 text-bow transition-transform duration-300 group-hover/fb:scale-110">
+                    <MessageSquareHeart className="size-6" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-extrabold">{t('contact.feedbackTitle')}</span>
+                    <span className="mt-1 block text-sm leading-relaxed text-muted">{t('contact.feedbackText')}</span>
+                  </span>
+                  <ArrowRight className="size-5 shrink-0 text-logo-blue transition-transform duration-300 group-hover/fb:translate-x-1 rtl:-scale-x-100 rtl:group-hover/fb:-translate-x-1" />
+                </Link>
               </Reveal>
             </div>
 

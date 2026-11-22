@@ -1,22 +1,28 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ClipboardList, Crown, Hourglass, LayoutDashboard, Trophy, Users } from 'lucide-react';
+import { ClipboardList, Crown, Hourglass, Inbox, LayoutDashboard, MessageSquareHeart, Send, Trophy, Users } from 'lucide-react';
 import AchievementsTab from '../components/admin/AchievementsTab.jsx';
 import { StatCard } from '../components/admin/AdminBits.jsx';
 import ApplicationsTab from '../components/admin/ApplicationsTab.jsx';
+import EmailCenterTab from '../components/admin/EmailCenterTab.jsx';
+import FeedbackTab from '../components/admin/FeedbackTab.jsx';
 import LeadersTab from '../components/admin/LeadersTab.jsx';
 import MembersTab from '../components/admin/MembersTab.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { useCollection } from '../hooks/useCollection.js';
+import { FEEDBACK } from '../services/feedbackService.js';
 import { SUBTEAM_LEADERS } from '../services/subteamLeadersService.js';
 
 const EASE = [0.22, 1, 0.36, 1];
 
+// `source` names the live collection a tab works on.
 const TABS = [
-  { id: 'members', icon: Users, Panel: MembersTab },
-  { id: 'applications', icon: ClipboardList, Panel: ApplicationsTab },
-  { id: 'achievements', icon: Trophy, Panel: AchievementsTab },
-  { id: 'leaders', icon: Crown, Panel: LeadersTab },
+  { id: 'members', icon: Users, Panel: MembersTab, source: 'members' },
+  { id: 'applications', icon: ClipboardList, Panel: ApplicationsTab, source: 'applications' },
+  { id: 'achievements', icon: Trophy, Panel: AchievementsTab, source: 'achievements' },
+  { id: 'leaders', icon: Crown, Panel: LeadersTab, source: 'leaders' },
+  { id: 'email', icon: Send, Panel: EmailCenterTab, source: 'members' },
+  { id: 'feedback', icon: MessageSquareHeart, Panel: FeedbackTab, source: 'feedback' },
 ];
 
 export default function AdminDashboard() {
@@ -29,15 +35,18 @@ export default function AdminDashboard() {
     applications: useCollection('applications'),
     achievements: useCollection('achievements'),
     leaders: useCollection(SUBTEAM_LEADERS),
+    feedback: useCollection(FEEDBACK),
   };
   const pendingCount = collections.applications.items.filter((item) => item.status === 'pending').length;
+  const newFeedbackCount = collections.feedback.items.filter((item) => item.status !== 'reviewed').length;
   const badges = {
     members: collections.members.items.length,
     applications: pendingCount,
     achievements: collections.achievements.items.length,
+    feedback: newFeedbackCount,
   };
 
-  const { Panel } = TABS.find((tab) => tab.id === activeId);
+  const { Panel, source } = TABS.find((tab) => tab.id === activeId);
 
   return (
     <section className="relative pb-24 pt-32">
@@ -63,7 +72,7 @@ export default function AdminDashboard() {
         </motion.header>
 
         <motion.div
-          className="mt-10 grid gap-4 sm:grid-cols-3"
+          className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.08, ease: EASE }}
@@ -88,6 +97,13 @@ export default function AdminDashboard() {
             label={t('admin.stats.achievements')}
             value={collections.achievements.items.length}
             loading={collections.achievements.loading}
+          />
+          <StatCard
+            icon={Inbox}
+            accent="#A78BFA"
+            label={t('admin.stats.feedback')}
+            value={newFeedbackCount}
+            loading={collections.feedback.loading}
           />
         </motion.div>
 
@@ -154,7 +170,7 @@ export default function AdminDashboard() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
-              <Panel collection={collections[activeId]} />
+              <Panel collection={collections[source]} />
             </motion.div>
           </AnimatePresence>
         </motion.div>

@@ -5,6 +5,8 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import FounderModal from './FounderModal.jsx';
 import HeroOrbit from './HeroOrbit.jsx';
+import NovaStatus from './NovaStatus.jsx';
+import SupervisorModal from './SupervisorModal.jsx';
 
 // Deterministic pseudo-random star field so the layout is identical on every render.
 const STARS = Array.from({ length: 44 }, (_, index) => {
@@ -69,6 +71,7 @@ function HeroBackground() {
 export default function Hero() {
   const { t } = useLanguage();
   const [founderOpen, setFounderOpen] = useState(false);
+  const [supervisorOpen, setSupervisorOpen] = useState(false);
 
   return (
     <section id="home" className="relative isolate flex min-h-svh items-center overflow-hidden pb-20 pt-32">
@@ -76,6 +79,8 @@ export default function Hero() {
 
       <div className="mx-auto grid w-full max-w-7xl items-center gap-16 px-5 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
         <motion.div variants={container} initial="hidden" animate="show" className="text-center lg:text-start">
+          <NovaStatus />
+
           <motion.span
             variants={item}
             className="inline-flex items-center gap-2 rounded-full border border-edge bg-surface/60 px-4 py-2 text-sm font-medium text-muted backdrop-blur-md"
@@ -101,7 +106,7 @@ export default function Hero() {
 
           <motion.div
             variants={item}
-            className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start"
+            className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap lg:justify-start"
           >
             <Link to="/join" className="btn btn-primary w-full sm:w-auto">
               {t('hero.ctaJoin')}
@@ -109,6 +114,9 @@ export default function Hero() {
             </Link>
             <button type="button" onClick={() => setFounderOpen(true)} className="btn btn-founder w-full sm:w-auto">
               {t('hero.ctaFounder')}
+            </button>
+            <button type="button" onClick={() => setSupervisorOpen(true)} className="btn btn-supervisor w-full sm:w-auto">
+              {t('hero.ctaSupervisor')}
             </button>
           </motion.div>
 
@@ -128,6 +136,7 @@ export default function Hero() {
       </div>
 
       <FounderModal open={founderOpen} onClose={() => setFounderOpen(false)} />
+      <SupervisorModal open={supervisorOpen} onClose={() => setSupervisorOpen(false)} />
     </section>
   );
 }

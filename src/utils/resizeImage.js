@@ -48,3 +48,36 @@ export async function resizeImageToDataUrl(file) {
   if (dataUrl.length > MAX_DATA_URL_LENGTH) throw new Error('image too large');
   return dataUrl;
 }
+
+const BANNER_MAX_WIDTH = 800;
+const BANNER_MAX_HEIGHT = 1200;
+// About 150 KB of image once base64 adds a third. firestore.rules rejects a status imageData above 210,000 characters.
+const BANNER_MAX_DATA_URL_LENGTH = 200000;
+
+// Turns a picked image file into a compressed JPEG data URL that keeps its proportions: at most 800px wide.
+// Quality drops first, then the size, until it fits. Rejects when the file cannot be decoded or still does not fit.
+export async function compressImageToDataUrl(file) {
+  const image = await loadImage(file);
+  const { naturalWidth, naturalHeight } = image;
+  if (!naturalWidth || !naturalHeight) throw new Error('empty image');
+
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  let scale = Math.min(1, BANNER_MAX_WIDTH / naturalWidth, BANNER_MAX_HEIGHT / naturalHeight);
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    canvas.width = Math.max(1, Math.round(naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(naturalHeight * scale));
+    context.fillStyle = BACKDROP;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    for (let quality = QUALITY; quality > 0.45; quality -= 0.1) {
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      if (dataUrl.length <= BANNER_MAX_DATA_URL_LENGTH) return dataUrl;
+    }
+    scale *= 0.8;
+  }
+  throw new Error('image too large');
+}

@@ -136,6 +136,30 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // The live "NOVA Status" story on the home page: public to read, written by admins only.
+    // imageData is a compressed image stored inline as a data URL (about 150 KB at most).
+    function isValidNovaStatus(data) {
+      let fields = ['active', 'title', 'message', 'imageData', 'updatedAt'];
+      return data.keys().hasOnly(fields)
+        && data.keys().hasAll(fields)
+        && data.active is bool
+        && data.title is string
+        && data.title.size() <= 150
+        && data.message is string
+        && data.message.size() <= 1000
+        && (data.imageData == null
+          || (data.imageData is string
+            && data.imageData.size() <= 210000
+            && data.imageData.matches('data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+')))
+        && data.updatedAt == request.time;
+    }
+
+    match /settings/novaStatus {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidNovaStatus(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
     // Achievements are shown publicly on the home page.
     match /achievements/{achievementId} {
       allow read: if true;

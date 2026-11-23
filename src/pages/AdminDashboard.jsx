@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ClipboardList, Crown, Hourglass, Inbox, LayoutDashboard, MessageSquareHeart, Send, Trophy, Users } from 'lucide-react';
+import { ClipboardList, Crown, Hourglass, Inbox, LayoutDashboard, MessageSquareHeart, Radio, Send, Trophy, Users } from 'lucide-react';
 import AchievementsTab from '../components/admin/AchievementsTab.jsx';
 import { StatCard } from '../components/admin/AdminBits.jsx';
 import ApplicationsTab from '../components/admin/ApplicationsTab.jsx';
@@ -8,6 +8,7 @@ import EmailCenterTab from '../components/admin/EmailCenterTab.jsx';
 import FeedbackTab from '../components/admin/FeedbackTab.jsx';
 import LeadersTab from '../components/admin/LeadersTab.jsx';
 import MembersTab from '../components/admin/MembersTab.jsx';
+import NovaStatusTab from '../components/admin/NovaStatusTab.jsx';
 import { useLanguage } from '../context/LanguageContext.jsx';
 import { useCollection } from '../hooks/useCollection.js';
 import { FEEDBACK } from '../services/feedbackService.js';
@@ -23,6 +24,8 @@ const TABS = [
   { id: 'leaders', icon: Crown, Panel: LeadersTab, source: 'leaders' },
   { id: 'email', icon: Send, Panel: EmailCenterTab, source: 'members' },
   { id: 'feedback', icon: MessageSquareHeart, Panel: FeedbackTab, source: 'feedback' },
+  // Subscribes to settings/novaStatus itself.
+  { id: 'status', icon: Radio, Panel: NovaStatusTab },
 ];
 
 export default function AdminDashboard() {

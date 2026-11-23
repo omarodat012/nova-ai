@@ -242,6 +242,49 @@ html[lang="ar"] {
     box-shadow: 0 0 38px -6px rgba(244, 114, 182, 0.9);
   }
 
+  .btn-supervisor {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(#16132b, #16132b) padding-box,
+      linear-gradient(135deg, #fbbf24, #22d3ee 55%, #4f8cff) border-box;
+    color: #fff;
+    box-shadow: 0 0 26px -8px rgba(251, 191, 36, 0.6);
+  }
+
+  .btn-supervisor:hover {
+    box-shadow: 0 0 38px -6px rgba(34, 211, 238, 0.8);
+  }
+
+  /* The border gradient repeats twice across 200%, so sliding it by one full width loops without a seam. */
+  .story-pill {
+    border: 2px solid transparent;
+    background:
+      linear-gradient(rgba(22, 19, 43, 0.94), rgba(22, 19, 43, 0.94)) padding-box,
+      linear-gradient(90deg, #f472b6, #fbbf24, #7c3aed, #4f8cff, #f472b6, #fbbf24, #7c3aed, #4f8cff, #f472b6)
+        border-box;
+    background-size:
+      100% 100%,
+      200% 100%;
+    box-shadow: 0 0 30px -8px rgba(244, 114, 182, 0.75);
+    animation: story-border 5s linear infinite;
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .story-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 42px -6px rgba(124, 58, 237, 0.95);
+  }
+
+  @keyframes story-border {
+    to {
+      background-position:
+        0 0,
+        100% 0;
+    }
+  }
+
   .field {
     width: 100%;
     border-radius: 0.9rem;

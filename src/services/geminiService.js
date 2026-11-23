@@ -30,12 +30,22 @@ function toPromptText(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
 }
 
-// Who Nova is talking to: a verified member (`member` is their `members` document), a signed-in visitor, or a guest ('').
-function describeAudience({ member, user }, subteams) {
+// Who Nova is talking to: the Faculty Supervisor, a leader, a verified member (`member` is their `members` document),
+// a signed-in visitor, or a guest (''). `roleTier` is useAuth().roleTier.
+function describeAudience({ member, user, roleTier }, subteams) {
+  if (roleTier === 'supervisor') {
+    return `
+
+CURRENT USER
+Current user is Dr. Enas Khashashneh (الدكتورة إيناس خشاشنة), Role: NOVA AI Faculty Supervisor, the university faculty member who supervises and supports the whole team. Greet her with extra warmth and respect, address her as "دكتورة إيناس" in Arabic or "Dr. Enas" in English (never by first name alone), stay polite and appreciative while keeping your friendly character, and thank her for supporting the team when it fits. She is not a student and is already part of the team, so never ask her to apply; her profile page is /profile.`;
+  }
   if (member) {
     const team = subteams.find((item) => item.id === member.subteam);
     const subteam = team ? `${team.name.ar} (${team.name.en})` : 'not assigned yet';
-    const role = getRoleById(member.role)?.label.en ?? 'Member';
+    const role =
+      roleTier === 'leader'
+        ? 'NOVA AI Leader (one of the people leading the team, so treat them as a team leader and thank them for leading when it fits)'
+        : (getRoleById(member.role)?.label.en ?? 'Member');
     return `
 
 CURRENT USER
@@ -43,6 +53,12 @@ Current user is a verified NOVA AI member: Name: ${toPromptText(member.fullName)
   }
   const name = toPromptText(user?.displayName);
   if (!user || !name) return '';
+  if (roleTier === 'leader') {
+    return `
+
+CURRENT USER
+Current user is ${name}, Role: NOVA AI Leader (they lead one of the SubTeams). Address them warmly by their first name as a team leader. They are already in the team, so do not ask them to apply.`;
+  }
   return `
 
 CURRENT USER
@@ -106,9 +122,12 @@ function readReply(data) {
 }
 
 // history: [{ role: 'user' | 'bot', text: string }], ending with the user's latest message.
-// `subteams` are the SubTeams with their live leaders (useSubteams()); `member` and `user` come from useAuth().
+// `subteams` are the SubTeams with their live leaders (useSubteams()); `member`, `user` and `roleTier` come from useAuth().
 // Resolves with Nova's reply text; rejects on a missing key, network error, timeout, quota limit or empty reply.
-export async function generateNovaReply(history, { signal, subteams = defaultSubteams, member = null, user = null } = {}) {
+export async function generateNovaReply(
+  history,
+  { signal, subteams = defaultSubteams, member = null, user = null, roleTier = null } = {},
+) {
   if (!isGeminiConfigured) throw new Error('VITE_GEMINI_API_KEY is not set');
 
   const controller = new AbortController();
@@ -124,7 +143,7 @@ export async function generateNovaReply(history, { signal, subteams = defaultSub
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: buildSystemInstruction(subteams, { member, user }) }] },
+          system_instruction: { parts: [{ text: buildSystemInstruction(subteams, { member, user, roleTier }) }] },
           contents: toContents(history),
           generationConfig: {
             temperature: 0.8,

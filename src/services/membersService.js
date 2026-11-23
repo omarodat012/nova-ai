@@ -6,10 +6,12 @@ import {
   onSnapshot,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore';
+import { SUPERVISOR_MEMBER_ID } from '../data/memberRoles.js';
 import { requireDb } from '../firebase/config.js';
 
 const MEMBERS = 'members';
@@ -129,6 +131,27 @@ export function subscribeToSubteamMembers(subteamId, onMembers, onError) {
     (snapshot) => onMembers(snapshot.docs.map((document) => ({ id: document.id, ...document.data() }))),
     onError,
   );
+}
+
+// The Faculty Supervisor's first profile save, when no admin has added her to `members` yet.
+// firestore.rules allows exactly this document, for her verified address only.
+export function createSupervisorProfile(email, { fullName, phone, photoURL }) {
+  const emailLower = toEmailLower(email);
+  return setDoc(doc(requireDb(), MEMBERS, SUPERVISOR_MEMBER_ID), {
+    fullName,
+    phone,
+    photoURL,
+    email: emailLower,
+    emailLower,
+    role: 'supervisor',
+    subteam: null,
+    isStudent: false,
+    major: null,
+    university: null,
+    academicYear: null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 // What a member may change about themselves. firestore.rules rejects any other field (role, subteam, email...).

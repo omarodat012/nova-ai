@@ -13,7 +13,6 @@ export const translations = {
       dashboard: 'لوحة التحكم',
       feedback: 'الاقتراحات والآراء',
       profile: 'ملفي الشخصي',
-      memberBadge: 'عضو في NOVA AI ✨',
       logout: 'تسجيل الخروج',
       account: 'قائمة الحساب',
       switchLabel: 'EN',
@@ -36,7 +35,7 @@ export const translations = {
         'NOVA AI فريق طلابي يجمع الشغوفين بالذكاء الاصطناعي وعلم البيانات. نتعلّم معاً، نبني مشاريع حقيقية، ونخوض الهاكاثونات والمسابقات جنباً إلى جنب.',
       ctaJoin: 'انضم إلينا الآن',
       ctaFounder: 'عن فاوندرنا الفخمة ✨',
-      ctaSupervisor: 'عن مشرفتنا الفخمة ✨',
+      ctaSupervisor: 'عن مشرفتنا المبدعة ✨',
       pillars: [
         { value: '5', label: 'فرق فرعية متخصصة' },
         { value: 'AI', label: 'مشاريع وهاكاثونات' },
@@ -54,6 +53,11 @@ export const translations = {
         'لها بصمة مميزة في تنظيم وإقامة الهاكاثونات والفعاليات، وشاركت في العديد منها، تاركةً أثرًا جميلًا في كل تجربة. أما عدد الهاكاثونات والفعاليات التي نظمتها أو شاركت فيها، فربما نحتاج قائمة طويلة جدًا لنتمكن من ذكرها، لذلك سنكتفي بالقول: **كثيرة لدرجة أننا فقدنا القدرة على عدّها!** 😄',
         'تقود NOVA AI بروح طموحة، وشغف لا يتوقف، وإيمان بأن الأفكار العظيمة تستحق أن تتحول إلى واقع.',
       ],
+    },
+    roleBadge: {
+      member: 'عضو في NOVA AI ✨',
+      leader: 'قائد في NOVA AI ✨',
+      supervisor: 'مشرفة فريق NOVA AI ✨',
     },
     supervisor: {
       name: 'الدكتورة إيناس خشاشنة',
@@ -272,6 +276,8 @@ export const translations = {
         search: 'ابحث بالاسم أو البريد أو الهاتف...',
         role: 'الدور',
         rolePlaceholder: 'اختر الدور...',
+        supervisorHint: 'المشرف يشرف على الفريق كاملاً، لذلك رقم الهاتف والفريق الفرعي اختياريان.',
+        supervisorTaken: 'لفريق NOVA AI مشرفة أكاديمية واحدة فقط، وهذا الدور مُسنَد حالياً إلى:',
         namePlaceholder: 'اكتب اسم العضو الكامل',
         isStudent: 'هل العضو طالب جامعي؟',
         isStudentHint: 'فعّل الخيار لإضافة بياناته الدراسية.',
@@ -515,6 +521,7 @@ export const translations = {
         email: 'البريد الإلكتروني',
         memberId: 'رقم العضوية',
         unassigned: 'غير محدد بعد',
+        wholeTeam: 'جميع فرق NOVA AI',
         locked: 'الفريق الفرعي والدور يحددهما مشرفو NOVA AI ولا يمكن تعديلهما من هنا.',
       },
       form: {
@@ -614,7 +621,6 @@ export const translations = {
       dashboard: 'Admin Dashboard',
       feedback: 'Share Your Feedback',
       profile: 'My Profile',
-      memberBadge: 'NOVA AI Member ✨',
       logout: 'Logout',
       account: 'Account menu',
       switchLabel: 'عربي',
@@ -637,7 +643,7 @@ export const translations = {
         'NOVA AI is a student team for people who are passionate about AI and Data Science. We learn together, build real projects, and take on hackathons and competitions side by side.',
       ctaJoin: 'Join NOVA AI',
       ctaFounder: 'About Our Amazing Founder ✨',
-      ctaSupervisor: 'About Our Supervisor ✨',
+      ctaSupervisor: 'About Our Creative Supervisor ✨',
       pillars: [
         { value: '5', label: 'Specialised sub-teams' },
         { value: 'AI', label: 'Projects & hackathons' },
@@ -655,6 +661,11 @@ export const translations = {
         "She has left a distinctive mark organising and running hackathons and events, and has taken part in many of them, leaving a beautiful impact on every experience. As for how many hackathons and events she has organised or joined, we would need a very long list to name them all, so we'll just say: **so many that we've lost the ability to count!** 😄",
         'She leads NOVA AI with an ambitious spirit, a passion that never stops, and a belief that great ideas deserve to become reality.',
       ],
+    },
+    roleBadge: {
+      member: 'NOVA AI Member ✨',
+      leader: 'NOVA AI Leader ✨',
+      supervisor: 'NOVA AI Faculty Supervisor ✨',
     },
     supervisor: {
       name: 'Dr. Enas Khashashneh',
@@ -879,6 +890,8 @@ export const translations = {
         search: 'Search by name, email or phone...',
         role: 'Role',
         rolePlaceholder: 'Select a role...',
+        supervisorHint: 'The supervisor oversees the whole team, so the phone number and SubTeam are optional.',
+        supervisorTaken: 'NOVA AI has only one Faculty Supervisor, and the role is currently held by:',
         namePlaceholder: "Enter the member's full name",
         isStudent: 'Is the member a university student?',
         isStudentHint: 'Switch this on to add their study details.',
@@ -1122,6 +1135,7 @@ export const translations = {
         email: 'Email',
         memberId: 'Member No.',
         unassigned: 'Not assigned yet',
+        wholeTeam: 'All NOVA AI teams',
         locked: 'Your SubTeam and role are set by the NOVA AI admins and cannot be changed here.',
       },
       form: {

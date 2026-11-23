@@ -10,8 +10,10 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { FirebaseNotConfiguredError, auth, db, googleProvider, isFirebaseConfigured, requireDb } from '../firebase/config.js';
+import { SUPERVISOR_MEMBER_ID, SUPERVISOR_NAME, getRoleTier, isSupervisorEmail } from '../data/memberRoles.js';
 import { findMemberByEmail } from '../services/membersService.js';
 import { useLanguage } from './LanguageContext.jsx';
+import { useSubteams } from './SubteamsContext.jsx';
 
 // Keep this list in sync with isAdmin() in firestore.rules, which is what actually enforces access.
 const ADMIN_EMAILS = ['omarodat012@gmail.com', 'shahla.alzawahreh33@gmail.com'];
@@ -25,6 +27,25 @@ function isAdminEmail(email) {
 function toUser(firebaseUser) {
   const { uid, email, displayName, photoURL, emailVerified } = firebaseUser;
   return { uid, email, displayName, photoURL, emailVerified };
+}
+
+// The Faculty Supervisor is recognized by her verified address even before she has a `members` document.
+// `unsaved` marks this stand-in: her first profile save creates members/supervisor (see firestore.rules).
+function supervisorFallbackProfile(firebaseUser) {
+  if (!firebaseUser.emailVerified || !isSupervisorEmail(firebaseUser.email)) return null;
+  const email = firebaseUser.email.trim().toLowerCase();
+  return {
+    id: SUPERVISOR_MEMBER_ID,
+    fullName: firebaseUser.displayName?.trim() || SUPERVISOR_NAME.en,
+    email,
+    emailLower: email,
+    role: 'supervisor',
+    subteam: null,
+    phone: null,
+    isStudent: false,
+    photoURL: null,
+    unsaved: true,
+  };
 }
 
 function newUserProfile(firebaseUser) {
@@ -83,6 +104,7 @@ async function logInWithGoogle() {
 
 export function AuthProvider({ children }) {
   const { lang } = useLanguage();
+  const { subteams } = useSubteams();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(isFirebaseConfigured);
   // The last members lookup, tagged with the account it was made for: { uid, profile }.
@@ -119,14 +141,16 @@ export function AuthProvider({ children }) {
         }
       }
       // firestore.rules only lets a verified address read its member document.
-      const profile = current.emailVerified ? await findMemberByEmail(current.email) : null;
+      const found = current.emailVerified ? await findMemberByEmail(current.email) : null;
+      const profile = found ?? supervisorFallbackProfile(current);
       if (isCurrent()) setMembership({ uid: current.uid, profile });
       return profile;
     } catch (error) {
       // Being unable to check membership must never break the session, nor demote a member we already recognized.
       console.warn('[NOVA AI] Could not check the members list.', error);
-      if (isCurrent()) setMembership((known) => (known?.uid === current.uid ? known : { uid: current.uid, profile: null }));
-      return null;
+      const profile = supervisorFallbackProfile(current);
+      if (isCurrent()) setMembership((known) => (known?.uid === current.uid ? known : { uid: current.uid, profile }));
+      return profile;
     }
   }, []);
 
@@ -183,6 +207,9 @@ export function AuthProvider({ children }) {
     };
     const hasAdminEmail = isAdminEmail(user?.email);
     const memberChecked = Boolean(user) && membership?.uid === user.uid;
+    const memberProfile = memberChecked ? membership.profile : null;
+    // Only a verified address counts, so nobody becomes a leader or the supervisor by typing someone else's email.
+    const roleTier = user?.emailVerified ? getRoleTier({ member: memberProfile, email: user.email, subteams }) : null;
 
     return {
       user,
@@ -192,8 +219,11 @@ export function AuthProvider({ children }) {
       isAdmin: hasAdminEmail && user.emailVerified,
       needsAdminVerification: hasAdminEmail && !user.emailVerified,
       // The matching `members` document ({ id, ...fields }), or null when this account is not a member.
-      memberProfile: memberChecked ? membership.profile : null,
+      memberProfile,
       memberLoading: Boolean(user) && !memberChecked,
+      // 'supervisor' | 'leader' | 'member', or null for guests and accounts that are not part of the team.
+      roleTier,
+      isSupervisor: roleTier === 'supervisor',
       refreshMemberProfile,
       // Timestamp (ms) of the last verification email sent to this account in this session, or null.
       verificationSentAt: user && verificationSent?.uid === user.uid ? verificationSent.at : null,
@@ -205,7 +235,7 @@ export function AuthProvider({ children }) {
       logInWithGoogle: refreshAfter(logInWithGoogle),
       logOut: () => signOut(requireAuth()),
     };
-  }, [user, loading, membership, verificationSent, refreshMemberProfile, sendVerificationEmail, confirmEmailVerified, updateDisplayName]);
+  }, [user, loading, membership, subteams, verificationSent, refreshMemberProfile, sendVerificationEmail, confirmEmailVerified, updateDisplayName]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

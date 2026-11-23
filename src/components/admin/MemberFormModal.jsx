@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BadgeCheck, CircleAlert, LoaderCircle, Mail, Phone, Save, User, Users } from 'lucide-react';
+import { BadgeCheck, CircleAlert, GraduationCap, LoaderCircle, Mail, Phone, Save, User, Users } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { memberRoles } from '../../data/memberRoles.js';
 import { subteams } from '../../data/subteams.js';
@@ -39,13 +39,14 @@ function toFormValues(member) {
 }
 
 // Phone and email are optional here (admins may not have them for every member) but must be valid when given.
+// The supervisor oversees the whole team, so she does not need a SubTeam either.
 function validate(values) {
   const errors = {};
 
   if (!values.fullName.trim()) errors.fullName = 'required';
   if (values.phone.trim() && !isValidPhone(values.phone)) errors.phone = 'phone';
   if (values.email.trim() && !isValidEmail(values.email)) errors.email = 'email';
-  if (!values.subteam) errors.subteam = 'required';
+  if (!values.subteam && values.role !== 'supervisor') errors.subteam = 'required';
   if (!values.role) errors.role = 'required';
   if (values.isStudent) {
     STUDENT_FIELDS.forEach((name) => {
@@ -61,7 +62,7 @@ function toMember(values) {
     fullName: values.fullName.trim(),
     phone: toLatinDigits(values.phone.trim()) || null,
     email: values.email.trim().toLowerCase() || null,
-    subteam: values.subteam,
+    subteam: values.subteam || null,
     role: values.role,
     isStudent: values.isStudent,
     major: values.isStudent ? values.major.trim() : null,
@@ -70,15 +71,18 @@ function toMember(values) {
   };
 }
 
-function MemberForm({ member, onClose }) {
+function MemberForm({ member, supervisor, onClose }) {
   const { t, localize } = useLanguage();
   const { values, fieldProps, toggleStudent, validateAll } = useFormFields(toFormValues(member), validate);
   const [status, setStatus] = useState('idle');
   const saving = status === 'saving';
+  const isSupervisor = values.role === 'supervisor';
+  // NOVA AI has one Faculty Supervisor: the role is locked while another member holds it.
+  const supervisorTaken = Boolean(supervisor) && supervisor.id !== member?.id;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (saving || !validateAll(event.currentTarget, FIELD_ORDER)) return;
+    if (saving || (isSupervisor && supervisorTaken) || !validateAll(event.currentTarget, FIELD_ORDER)) return;
 
     setStatus('saving');
     try {
@@ -136,6 +140,7 @@ function MemberForm({ member, onClose }) {
             icon={Users}
             label={t('form.subteam')}
             placeholder={t('form.subteamPlaceholder')}
+            required={!isSupervisor}
             {...fieldProps('subteam')}
           >
             {subteams.map((team) => (
@@ -151,12 +156,33 @@ function MemberForm({ member, onClose }) {
             {...fieldProps('role')}
           >
             {memberRoles.map((role) => (
-              <option key={role.id} value={role.id} className="bg-surface text-white">
+              <option
+                key={role.id}
+                value={role.id}
+                disabled={role.id === 'supervisor' && supervisorTaken}
+                className="bg-surface text-white"
+              >
                 {localize(role.label)}
               </option>
             ))}
           </SelectField>
         </div>
+
+        {(isSupervisor || supervisorTaken) && (
+          <p className="flex items-start gap-2.5 rounded-2xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-sm font-medium leading-relaxed text-amber-100">
+            <GraduationCap className="mt-0.5 size-4 shrink-0 text-amber-300" />
+            <span>
+              {supervisorTaken ? (
+                <>
+                  {t('admin.members.supervisorTaken')}{' '}
+                  <strong className="[overflow-wrap:anywhere]">{supervisor.fullName}</strong>
+                </>
+              ) : (
+                t('admin.members.supervisorHint')
+              )}
+            </span>
+          </p>
+        )}
 
         <StudentSection
           checked={values.isStudent}
@@ -191,10 +217,11 @@ function MemberForm({ member, onClose }) {
 }
 
 // `member` is the document being edited, or null to register a new member.
-export default function MemberFormModal({ open, member, onClose }) {
+// `supervisor` is the member currently holding the supervisor role, or null when the role is free.
+export default function MemberFormModal({ open, member, supervisor, onClose }) {
   return (
     <Modal open={open} onClose={onClose} labelledBy="member-form-title" className="max-w-2xl">
-      <MemberForm member={member} onClose={onClose} />
+      <MemberForm member={member} supervisor={supervisor} onClose={onClose} />
     </Modal>
   );
 }

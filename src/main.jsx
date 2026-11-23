@@ -12,13 +12,13 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <LanguageProvider>
-        <AuthProvider>
-          <SubteamsProvider>
+        <SubteamsProvider>
+          <AuthProvider>
             <MotionConfig reducedMotion="user">
               <App />
             </MotionConfig>
-          </SubteamsProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </SubteamsProvider>
       </LanguageProvider>
     </BrowserRouter>
   </StrictMode>,

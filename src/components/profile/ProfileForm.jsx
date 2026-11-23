@@ -3,8 +3,9 @@ import { AnimatePresence } from 'framer-motion';
 import { Camera, CircleAlert, CircleCheck, LoaderCircle, Phone, Save, Trash2, User } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { getMemberPhoto } from '../../data/memberRoles.js';
 import { useFormFields } from '../../hooks/useFormFields.js';
-import { updateOwnProfile } from '../../services/membersService.js';
+import { createSupervisorProfile, updateOwnProfile } from '../../services/membersService.js';
 import { resizeImageToDataUrl } from '../../utils/resizeImage.js';
 import { isValidPhone, toLatinDigits } from '../../utils/validation.js';
 import { TextField } from '../forms/FormFields.jsx';
@@ -55,7 +56,7 @@ function toProfile(values, photoURL) {
 // Lets a member edit their own details. `member` is their saved `members` document ({ id, ...fields }).
 export default function ProfileForm({ member }) {
   const { t } = useLanguage();
-  const { refreshMemberProfile } = useAuth();
+  const { refreshMemberProfile, isSupervisor } = useAuth();
   const { values, fieldProps, toggleStudent, validateAll } = useFormFields(toFormValues(member), validate);
   const [photoURL, setPhotoURL] = useState(member.photoURL ?? null);
   const [photoBusy, setPhotoBusy] = useState(false);
@@ -96,7 +97,8 @@ export default function ProfileForm({ member }) {
 
     setStatus('saving');
     try {
-      await updateOwnProfile(member.id, profile);
+      // `unsaved` is the supervisor's stand-in profile: her first save creates the document.
+      await (member.unsaved ? createSupervisorProfile(member.email, profile) : updateOwnProfile(member.id, profile));
       await refreshMemberProfile();
       setStatus('saved');
     } catch (error) {
@@ -118,7 +120,11 @@ export default function ProfileForm({ member }) {
 
         <fieldset disabled={saving} className="mt-6 min-w-0 space-y-5">
           <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-edge bg-space/40 p-4">
-            <Avatar photoURL={photoURL} name={values.fullName} className="size-20 text-3xl ring-2 ring-edge" />
+            <Avatar
+              photoURL={getMemberPhoto({ ...member, photoURL })}
+              name={values.fullName}
+              className="size-20 text-3xl ring-2 ring-edge"
+            />
             <div className="min-w-0 flex-1 basis-52">
               <p className="font-bold">{t('profile.form.photo')}</p>
               <p className="mt-0.5 text-sm text-muted">{t('profile.form.photoHint')}</p>
@@ -179,7 +185,7 @@ export default function ProfileForm({ member }) {
             />
           </div>
 
-          <StudentSection checked={values.isStudent} onToggle={toggleStudent} fieldProps={fieldProps} />
+          {!isSupervisor && <StudentSection checked={values.isStudent} onToggle={toggleStudent} fieldProps={fieldProps} />}
 
           <AnimatePresence mode="wait" initial={false}>
             {(status === 'permission' || status === 'save') && (
@@ -197,7 +203,7 @@ export default function ProfileForm({ member }) {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <button
               type="submit"
-              disabled={!dirty || photoBusy}
+              disabled={!(dirty || member.unsaved) || photoBusy}
               className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
             >
               {saving ? <LoaderCircle className="size-5 animate-spin" /> : <Save className="size-5" />}

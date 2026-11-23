@@ -28,6 +28,12 @@ function byName(a, b) {
   return (a.fullName ?? '').localeCompare(b.fullName ?? '');
 }
 
+const ROLE_CHIP_TONES = {
+  supervisor: 'border-amber-300/50 bg-amber-300/10 text-amber-200',
+  leader: 'border-bow/45 bg-bow/10 text-bow',
+  member: 'border-edge bg-white/5 text-muted',
+};
+
 function MemberRow({ member, onEdit, onDelete }) {
   const { t, localize } = useLanguage();
   const role = getRoleById(member.role);
@@ -46,9 +52,7 @@ function MemberRow({ member, onEdit, onDelete }) {
             <h3 className="min-w-0 font-bold [overflow-wrap:anywhere]">{member.fullName}</h3>
             {role && (
               <span
-                className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
-                  member.role === 'leader' ? 'border-bow/45 bg-bow/10 text-bow' : 'border-edge bg-white/5 text-muted'
-                }`}
+                className={`rounded-full border px-2.5 py-1 text-xs font-bold ${ROLE_CHIP_TONES[member.role] ?? ROLE_CHIP_TONES.member}`}
               >
                 {localize(role.label)}
               </span>
@@ -139,7 +143,12 @@ export default function MembersTab({ collection }) {
         </ul>
       </CollectionState>
 
-      <MemberFormModal open={Boolean(editor)} member={editor?.member ?? null} onClose={() => setEditor(null)} />
+      <MemberFormModal
+        open={Boolean(editor)}
+        member={editor?.member ?? null}
+        supervisor={collection.items.find((member) => member.role === 'supervisor') ?? null}
+        onClose={() => setEditor(null)}
+      />
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title={t('admin.members.deleteTitle')}

@@ -84,6 +84,26 @@ service cloud.firestore {
         && data.updatedAt == request.time;
     }
 
+    // NOVA AI's single Faculty Supervisor, recognized by her verified address even before an admin adds her to
+    // `members`. Keep the address in sync with SUPERVISOR_EMAIL in src/data/memberRoles.js.
+    function isSupervisor() {
+      return hasVerifiedEmail() && request.auth.token.email.lower() == 'enas.a@yu.edu.jo';
+    }
+
+    // The one document the supervisor may create herself: her own profile, with the role, address and SubTeam fixed.
+    function isValidSupervisorProfile(data) {
+      let fields = ['fullName', 'phone', 'photoURL', 'email', 'emailLower', 'role', 'subteam', 'isStudent', 'major',
+        'university', 'academicYear', 'createdAt', 'updatedAt'];
+      return data.keys().hasOnly(fields)
+        && data.keys().hasAll(fields)
+        && isValidOwnProfile(data)
+        && data.email == request.auth.token.email.lower()
+        && data.emailLower == request.auth.token.email.lower()
+        && data.role == 'supervisor'
+        && data.subteam == null
+        && data.createdAt == request.time;
+    }
+
     // Each signed-in user creates their own profile once, on first login, and may rename themselves afterwards.
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
@@ -110,14 +130,18 @@ service cloud.firestore {
     // role, subteam, email and emailLower stay under admin control, and members cannot create or delete documents.
     // Verified NOVA AI members can also read the other members, which is what the SubTeam rosters are built from.
     // Guests and accounts that are not members cannot read anyone.
+    // The Faculty Supervisor reads the rosters like a member, and may create members/supervisor (her own profile)
+    // when no admin has added her yet; after that the same self-update limits apply to her as to any member.
     match /members/{memberId} {
-      allow read: if isAdmin() || ownsMember(resource.data) || isMember();
+      allow read: if isAdmin() || ownsMember(resource.data) || isMember() || isSupervisor();
       allow update: if isAdmin()
         || (ownsMember(resource.data)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
             ['fullName', 'phone', 'isStudent', 'major', 'university', 'academicYear', 'photoURL', 'updatedAt'])
           && isValidOwnProfile(request.resource.data));
-      allow create, delete: if isAdmin();
+      allow create: if isAdmin()
+        || (isSupervisor() && memberId == 'supervisor' && isValidSupervisorProfile(request.resource.data));
+      allow delete: if isAdmin();
     }
 
     // The members lookup behind isMember(). The app keeps it in sync with `members` from the admin dashboard.

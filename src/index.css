@@ -285,6 +285,44 @@ html[lang="ar"] {
     }
   }
 
+  .badge-supervisor {
+    border-color: rgba(251, 191, 36, 0.7);
+    background-image: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.14));
+    color: #fde68a;
+    animation: glow-supervisor 2.8s ease-in-out infinite;
+  }
+
+  .badge-leader {
+    border-color: rgba(34, 211, 238, 0.6);
+    background-image: linear-gradient(135deg, rgba(124, 58, 237, 0.36), rgba(34, 211, 238, 0.22));
+    color: #fff;
+    animation: glow-leader 2.8s ease-in-out infinite;
+  }
+
+  @keyframes glow-supervisor {
+    0%,
+    100% {
+      box-shadow: 0 0 14px -2px rgba(251, 191, 36, 0.5);
+    }
+    50% {
+      box-shadow:
+        0 0 0 4px rgba(251, 191, 36, 0.14),
+        0 0 28px 0 rgba(245, 158, 11, 0.7);
+    }
+  }
+
+  @keyframes glow-leader {
+    0%,
+    100% {
+      box-shadow: 0 0 14px -2px rgba(124, 58, 237, 0.55);
+    }
+    50% {
+      box-shadow:
+        0 0 0 4px rgba(34, 211, 238, 0.12),
+        0 0 28px 0 rgba(34, 211, 238, 0.6);
+    }
+  }
+
   .field {
     width: 100%;
     border-radius: 0.9rem;

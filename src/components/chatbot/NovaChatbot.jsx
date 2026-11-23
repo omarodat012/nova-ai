@@ -61,7 +61,7 @@ function TypingIndicator({ label }) {
 export default function NovaChatbot() {
   const { t, localize } = useLanguage();
   const { subteams } = useSubteams();
-  const { user, memberProfile } = useAuth();
+  const { user, memberProfile, roleTier } = useAuth();
   const [open, setOpen] = useState(false);
   // The conversation only; Nova's welcome bubble is rendered separately so it follows the UI language.
   const [messages, setMessages] = useState([]);
@@ -119,7 +119,7 @@ export default function NovaChatbot() {
     setTyping(true);
 
     try {
-      const reply = await getNovaReply(history, { signal: request.signal, subteams, member: memberProfile, user });
+      const reply = await getNovaReply(history, { signal: request.signal, subteams, member: memberProfile, user, roleTier });
       if (!request.signal.aborted) setMessages((current) => [...current, createMessage('bot', reply)]);
     } catch {
       // Only an aborted request (cleared chat) rejects; there is nothing to show for it.
@@ -178,7 +178,7 @@ export default function NovaChatbot() {
             </header>
 
             <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
-              <Bubble>{localize(getWelcomeMessage(memberProfile))}</Bubble>
+              <Bubble>{localize(getWelcomeMessage(memberProfile, roleTier))}</Bubble>
               {messages.map((message) =>
                 message.role === 'user' ? (
                   <Bubble key={message.id} fromUser>

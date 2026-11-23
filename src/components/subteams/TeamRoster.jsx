@@ -2,10 +2,12 @@ import { motion } from 'framer-motion';
 import { BookOpen, Building2, CircleAlert, Crown, EyeOff, GraduationCap, Lock, Mail, Phone, UserRound, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { useSubteams } from '../../context/SubteamsContext.jsx';
 import { academicYears } from '../../data/academicYears.js';
-import { getRoleById } from '../../data/memberRoles.js';
+import { getMemberPhoto, getRoleById, getRoleTier } from '../../data/memberRoles.js';
 import { useRosterSettings, useSubteamRoster } from '../../hooks/useRoster.js';
 import Avatar from '../ui/Avatar.jsx';
+import RoleBadge from '../ui/RoleBadge.jsx';
 import { PersonDetail } from './TeamLeadership.jsx';
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -16,17 +18,17 @@ const CARD_VARIANTS = {
   shown: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE } },
 };
 
-// Leaders first, then everyone by name.
-function byRoleThenName(a, b) {
-  const rank = (member) => (member.role === 'leader' ? 0 : 1);
-  return rank(a) - rank(b) || (a.fullName ?? '').localeCompare(b.fullName ?? '');
+const TIER_RANK = { supervisor: 0, leader: 1, member: 2 };
+
+// The supervisor first, then leaders, then everyone by name.
+function byTierThenName(a, b) {
+  return TIER_RANK[a.tier] - TIER_RANK[b.tier] || (a.fullName ?? '').localeCompare(b.fullName ?? '');
 }
 
+// `member.tier` is the person's getRoleTier() result.
 function MemberCard({ member, isYou, showDetails }) {
   const { t, localize } = useLanguage();
   const role = getRoleById(member.role) ?? getRoleById('member');
-  const isLeader = member.role === 'leader';
-  const RoleIcon = isLeader ? Crown : UserRound;
   const academicYear = academicYears.find((year) => year.id === member.academicYear);
 
   const details = showDetails
@@ -60,14 +62,22 @@ function MemberCard({ member, isYou, showDetails }) {
 
       <div className="flex items-center gap-4">
         <span className="size-16 shrink-0 rounded-full bg-[linear-gradient(135deg,var(--accent),#7C3AED)] p-[3px] shadow-[0_0_24px_-8px_var(--accent)]">
-          <Avatar photoURL={member.photoURL} name={member.fullName} className="size-full text-xl" />
+          <Avatar photoURL={getMemberPhoto(member)} name={member.fullName} className="size-full text-xl" />
         </span>
         <div className="min-w-0">
           <h3 className="text-lg font-bold leading-snug [overflow-wrap:anywhere]">{member.fullName}</h3>
-          <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
-            <RoleIcon className={`size-4 shrink-0 ${isLeader ? 'text-amber-300' : 'text-[var(--accent)]'}`} />
-            {localize(role.label)}
-          </p>
+          {member.tier === 'member' ? (
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+              <UserRound className="size-4 shrink-0 text-[var(--accent)]" />
+              {localize(role.label)}
+            </p>
+          ) : (
+            <RoleBadge
+              tier={member.tier}
+              icon={member.tier === 'supervisor' ? GraduationCap : Crown}
+              className="mt-2 px-2.5 py-1 text-xs"
+            />
+          )}
         </div>
       </div>
 
@@ -99,6 +109,7 @@ function RosterNote({ icon: Icon, tone = 'border-edge bg-white/5 text-muted', ch
 export default function TeamRoster({ team }) {
   const { t } = useLanguage();
   const { isAdmin, memberProfile } = useAuth();
+  const { subteams } = useSubteams();
   const canView = isAdmin || Boolean(memberProfile);
   const { settings, loading: settingsLoading } = useRosterSettings(canView);
   const openToMembers = settings.showRoster[team.id] === true;
@@ -107,7 +118,7 @@ export default function TeamRoster({ team }) {
 
   if (!visible) return null;
 
-  const sorted = [...members].sort(byRoleThenName);
+  const sorted = members.map((member) => ({ ...member, tier: getRoleTier({ member, subteams }) })).sort(byTierThenName);
 
   return (
     <motion.section

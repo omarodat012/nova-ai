@@ -11,12 +11,22 @@ const WELCOME_MESSAGE = {
   en: "Hey there! I'm Nova 🎀 NOVA AI's resident robot.\nAsk me about the team, our sub-teams, our founder, or how to join. What would you like to know?",
 };
 
+const SUPERVISOR_WELCOME = {
+  ar: 'أهلاً دكتورة إيناس! نورتي موقع نوڤا 🎀✨\nشرف كبير إلنا وجودك معنا كمشرفة لفريق NOVA AI. كيف بقدر أساعدك اليوم؟',
+  en: "Welcome Dr. Enas! It's an honour to have you here 🎀✨\nThank you for guiding NOVA AI as our Faculty Supervisor. How can I help you today?",
+};
+
+// How Nova addresses the supervisor in her local replies.
+const SUPERVISOR_ADDRESS = { ar: 'دكتورة إيناس', en: 'Dr. Enas' };
+
 function getFirstName(member) {
   return member?.fullName?.trim().split(/\s+/)[0] ?? '';
 }
 
-// Nova's opening bubble: members (`member` is useAuth().memberProfile) are greeted by their first name.
-export function getWelcomeMessage(member) {
+// Nova's opening bubble: members (`member` is useAuth().memberProfile) are greeted by their first name,
+// and the Faculty Supervisor (`roleTier` is useAuth().roleTier) by her title.
+export function getWelcomeMessage(member, roleTier = null) {
+  if (roleTier === 'supervisor') return SUPERVISOR_WELCOME;
   const name = getFirstName(member);
   if (!name) return WELCOME_MESSAGE;
   return {
@@ -140,14 +150,16 @@ function matches(text, keyword) {
   return text.includes(keyword);
 }
 
-function getLocalReply(message, subteams, member) {
+function getLocalReply(message, subteams, member, roleTier) {
   const text = normalize(message);
   const intent = INTENTS.find(({ keywords }) => keywords.some((keyword) => matches(text, keyword)));
   const lang = /[\u0600-\u06FF]/.test(message) ? 'ar' : 'en';
-  const name = getFirstName(member);
+  const isSupervisor = roleTier === 'supervisor';
+  const name = isSupervisor ? SUPERVISOR_ADDRESS[lang] : getFirstName(member);
 
   if (intent) {
-    if (name && intent.memberReply) return intent.memberReply[lang](name);
+    // The teammate jokes are written for students, so the supervisor gets the standard replies.
+    if (name && intent.memberReply && !isSupervisor) return intent.memberReply[lang](name);
     const openTeams = subteams.filter((team) => team.leaders.length === 0).map((team) => team.name[lang]);
     if (!intent.openTeamsNote || openTeams.length === 0) return intent.reply[lang];
     return `${intent.reply[lang]}\n${intent.openTeamsNote[lang](openTeams)}`;
@@ -160,11 +172,14 @@ function getLocalReply(message, subteams, member) {
 
 // history: [{ role: 'user' | 'bot', text: string }], ending with the user's latest message.
 // `subteams` are the SubTeams with their live leaders (useSubteams()).
-// `member` (the chatting member's document, or null) and `user` come from useAuth().
-export async function getNovaReply(history, { signal, subteams = defaultSubteams, member = null, user = null } = {}) {
+// `member` (the chatting member's document, or null), `user` and `roleTier` come from useAuth().
+export async function getNovaReply(
+  history,
+  { signal, subteams = defaultSubteams, member = null, user = null, roleTier = null } = {},
+) {
   if (isGeminiConfigured) {
     try {
-      return await generateNovaReply(history, { signal, subteams, member, user });
+      return await generateNovaReply(history, { signal, subteams, member, user, roleTier });
     } catch (error) {
       if (signal?.aborted) throw error;
       console.warn(`[NOVA AI] Gemini request failed (${error.message}). Nova is using her local replies instead.`);
@@ -172,5 +187,5 @@ export async function getNovaReply(history, { signal, subteams = defaultSubteams
   } else {
     await new Promise((resolve) => setTimeout(resolve, 650 + Math.random() * 650));
   }
-  return getLocalReply(history[history.length - 1].text, subteams, member);
+  return getLocalReply(history[history.length - 1].text, subteams, member, roleTier);
 }

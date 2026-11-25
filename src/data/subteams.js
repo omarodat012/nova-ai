@@ -14,7 +14,7 @@ export const subteams = [
     emoji: '🧠',
     icon: Brain,
     accent: '#4F8CFF',
-    logo: '/assets/subteams/projects.png',
+    logo: '/assets/subteams/projects.jpeg',
     name: {
       ar: 'فريق المشاريع والمسابقات',
       en: 'Projects & Competitions Team',
@@ -55,7 +55,7 @@ export const subteams = [
     emoji: '⚙️',
     icon: Settings2,
     accent: '#8B5CF6',
-    logo: '/assets/subteams/operations.png',
+    logo: '/assets/subteams/operations.jpeg',
     name: {
       ar: 'فريق العمليات والتنظيم',
       en: 'Operations & Organization Team',
@@ -96,7 +96,7 @@ export const subteams = [
     emoji: '🎨',
     icon: Palette,
     accent: '#F472B6',
-    logo: '/assets/subteams/media.png',
+    logo: '/assets/subteams/media.jpeg',
     name: {
       ar: 'فريق الإعلام والمحتوى',
       en: 'Media & Content Team',
@@ -137,7 +137,7 @@ export const subteams = [
     emoji: '🤝',
     icon: Handshake,
     accent: '#5EC8F2',
-    logo: '/assets/subteams/partnerships.png',
+    logo: '/assets/subteams/partnerships.jpeg',
     name: {
       ar: 'فريق الشراكات والرعايات',
       en: 'Partnerships & Sponsorships Team',

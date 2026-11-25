@@ -71,7 +71,7 @@ function achievementGalleries() {
 
 export default defineConfig({
   // GitHub Pages serves the site from /nova-ai/ (the repository name); everywhere else it runs at the root.
-  base: process.env.GITHUB_ACTIONS ? '/nova-ai/' : '/',
+  base: '/',
   plugins: [react(), tailwindcss(), achievementGalleries()],
   build: {
     // The Firestore SDK is a single ~500 kB library (150 kB gzipped) that cannot be split any further.

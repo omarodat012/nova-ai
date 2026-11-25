@@ -186,7 +186,7 @@ export const subteams = [
     emoji: '🎓',
     icon: GraduationCap,
     accent: '#A78BFA',
-    logo: '/assets/subteams/education.png',
+    logo: '/assets/subteams/education.jpeg',
     name: {
       ar: 'فريق التعليم والمجتمع',
       en: 'Education & Community Team',

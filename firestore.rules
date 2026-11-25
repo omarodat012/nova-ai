@@ -144,6 +144,31 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // The public team strip on the home page: one card per member (document ID = member ID) with a name, photo,
+    // role and SubTeam only, so guests never touch `members`. The app keeps it in sync from the admin dashboard.
+    // The Faculty Supervisor is never listed. A member may change the name and photo of their own card, nothing else;
+    // ownership is checked against the email on their `members` document.
+    function isValidPublicMember(data) {
+      return data.keys().hasOnly(['name', 'photoURL', 'role', 'roleTier', 'subteam', 'updatedAt'])
+        && isText(data.name, 120)
+        && isValidPhoto(data.get('photoURL', null))
+        && isText(data.role, 60)
+        && data.role != 'supervisor'
+        && data.roleTier in ['leader', 'member']
+        && isOptionalText(data.get('subteam', null), 60)
+        && data.updatedAt == request.time;
+    }
+
+    match /public_members/{memberId} {
+      allow read: if true;
+      allow create: if isAdmin() && memberId != 'supervisor' && isValidPublicMember(request.resource.data);
+      allow update: if (isAdmin() && isValidPublicMember(request.resource.data))
+        || (ownsMember(get(/databases/$(database)/documents/members/$(memberId)).data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photoURL', 'updatedAt'])
+          && isValidPublicMember(request.resource.data));
+      allow delete: if isAdmin();
+    }
+
     // The members lookup behind isMember(). The app keeps it in sync with `members` from the admin dashboard.
     match /member_emails/{emailLower} {
       allow read, write: if isAdmin();

@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { SUPERVISOR_MEMBER_ID } from '../data/memberRoles.js';
 import { requireDb } from '../firebase/config.js';
+import { publicMemberRef, syncOwnPublicProfile, toPublicMember } from './publicMembersService.js';
 
 const MEMBERS = 'members';
 // One empty-ish document per member address (document ID = lowercased email). firestore.rules checks it to decide
@@ -49,13 +50,16 @@ export async function addMember(member) {
   const db = requireDb();
   const batch = writeBatch(db);
   const lookup = memberEmailRef(db, member.email);
+  const reference = doc(collection(db, MEMBERS));
+  const publicMember = toPublicMember(member);
 
-  batch.set(doc(collection(db, MEMBERS)), {
+  batch.set(reference, {
     ...member,
     emailLower: toEmailLower(member.email),
     createdAt: serverTimestamp(),
   });
   if (lookup) batch.set(lookup, memberEmailData());
+  if (publicMember) batch.set(publicMemberRef(db, reference.id), publicMember);
   await batch.commit();
 }
 
@@ -75,6 +79,10 @@ export async function updateMember(id, member, previousEmail) {
   if (previousLookup && previousLookup.id !== lookup?.id && !(await isEmailUsedByAnotherMember(db, previousLookup.id, id))) {
     batch.delete(previousLookup);
   }
+  // The public card follows the edit, and disappears if the member became the supervisor.
+  const publicMember = toPublicMember(member, { keepPhoto: true });
+  if (publicMember) batch.set(publicMemberRef(db, id), publicMember, { merge: true });
+  else batch.delete(publicMemberRef(db, id));
   await batch.commit();
 }
 
@@ -84,6 +92,7 @@ export async function deleteMember(id, email) {
   const lookup = memberEmailRef(db, email);
 
   batch.delete(doc(db, MEMBERS, id));
+  batch.delete(publicMemberRef(db, id));
   if (lookup && !(await isEmailUsedByAnotherMember(db, lookup.id, id))) batch.delete(lookup);
   await batch.commit();
 }
@@ -155,8 +164,9 @@ export function createSupervisorProfile(email, { fullName, phone, photoURL }) {
 }
 
 // What a member may change about themselves. firestore.rules rejects any other field (role, subteam, email...).
-export function updateOwnProfile(id, { fullName, phone, isStudent, major, university, academicYear, photoURL }) {
-  return updateDoc(doc(requireDb(), MEMBERS, id), {
+// The name and photo are then copied to the member's public card on the home page.
+export async function updateOwnProfile(id, { fullName, phone, isStudent, major, university, academicYear, photoURL }) {
+  await updateDoc(doc(requireDb(), MEMBERS, id), {
     fullName,
     phone,
     isStudent,
@@ -166,4 +176,5 @@ export function updateOwnProfile(id, { fullName, phone, isStudent, major, univer
     photoURL,
     updatedAt: serverTimestamp(),
   });
+  await syncOwnPublicProfile(id, { fullName, photoURL });
 }

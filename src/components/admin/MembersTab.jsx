@@ -4,6 +4,7 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { getRoleById } from '../../data/memberRoles.js';
 import { useAdminAction } from '../../hooks/useAdminAction.js';
 import { deleteMember, syncMemberEmails } from '../../services/membersService.js';
+import { syncPublicMembers } from '../../services/publicMembersService.js';
 import {
   ActionAlert,
   CollectionState,
@@ -88,16 +89,17 @@ export default function MembersTab({ collection }) {
   const [syncFailed, setSyncFailed] = useState(false);
 
   // Opening the tab repairs `member_emails`, the lookup firestore.rules uses to recognize members (members added
-  // before it existed have no entry yet). It waits for the real list: syncing against an empty one would wipe it.
+  // before it existed have no entry yet), and `public_members`, the cards of the home page team strip.
+  // It waits for the real list: syncing against an empty one would wipe both.
   const ready = !collection.loading && !collection.error;
   const members = collection.items;
   useEffect(() => {
     if (!ready) return;
-    syncMemberEmails(members).catch((error) => {
-      console.error('[NOVA AI] Could not sync the members lookup.', error);
+    Promise.all([syncMemberEmails(members), syncPublicMembers(members)]).catch((error) => {
+      console.error('[NOVA AI] Could not sync the members lookup and the public team list.', error);
       setSyncFailed(true);
     });
-    // Once per visit to the tab; later adds, edits and deletes keep the lookup up to date themselves.
+    // Once per visit to the tab; later adds, edits and deletes keep both up to date themselves.
   }, [ready]);
 
   const visible = collection.items

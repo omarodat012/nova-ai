@@ -94,6 +94,16 @@ export const translations = {
         },
       },
     },
+    team: {
+      eyebrow: 'فريقنا',
+      title: 'تعرّف على فريق NOVA AI',
+      leaderOf: 'قائد {team}',
+      memberOf: 'عضو في {team}',
+      leader: 'قائد فريق',
+      member: 'عضو في الفريق',
+      previous: 'السابق',
+      next: 'التالي',
+    },
     subteams: {
       eyebrow: 'الفرق الفرعية',
       title: 'خمسة فرق، وهدف واحد',
@@ -701,6 +711,16 @@ export const translations = {
           text: 'We are building an active community that shares knowledge and opportunities, connects students with companies and institutions, and helps every member grow technically and personally.',
         },
       },
+    },
+    team: {
+      eyebrow: 'Our Team',
+      title: 'Meet the NOVA AI Team',
+      leaderOf: '{team} Leader',
+      memberOf: '{team} Member',
+      leader: 'Team Leader',
+      member: 'Team Member',
+      previous: 'Previous',
+      next: 'Next',
     },
     subteams: {
       eyebrow: 'SubTeams',

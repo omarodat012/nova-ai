@@ -45,6 +45,7 @@ jobs:
           VITE_EMAILJS_SERVICE_ID: ${{ secrets.VITE_EMAILJS_SERVICE_ID }}
           VITE_EMAILJS_TEMPLATE_ID: ${{ secrets.VITE_EMAILJS_TEMPLATE_ID }}
           VITE_EMAILJS_PUBLIC_KEY: ${{ secrets.VITE_EMAILJS_PUBLIC_KEY }}
+          VITE_DEPLOY_API_KEY: ${{ secrets.VITE_DEPLOY_API_KEY }}
 
       # GitHub Pages serves 404.html for unknown paths, which lets React Router handle /join, /subteam/:id, /admin.
       - name: Add SPA fallback

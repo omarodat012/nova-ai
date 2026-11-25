@@ -2,15 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { GoogleAuthProvider, connectAuthEmulator, getAuth } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
 
-const env = import.meta.env;
-
+// Each variable is read by its full name on purpose: referencing `import.meta.env` as a whole object makes Vite
+// embed every VITE_ variable of the build machine in the bundle, including ones this app never uses.
 const ENV_VALUES = {
-  VITE_FIREBASE_API_KEY: env.VITE_FIREBASE_API_KEY,
-  VITE_FIREBASE_AUTH_DOMAIN: env.VITE_FIREBASE_AUTH_DOMAIN,
-  VITE_FIREBASE_PROJECT_ID: env.VITE_FIREBASE_PROJECT_ID,
-  VITE_FIREBASE_STORAGE_BUCKET: env.VITE_FIREBASE_STORAGE_BUCKET,
-  VITE_FIREBASE_MESSAGING_SENDER_ID: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  VITE_FIREBASE_APP_ID: env.VITE_FIREBASE_APP_ID,
+  VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
+  VITE_FIREBASE_AUTH_DOMAIN: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  VITE_FIREBASE_PROJECT_ID: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  VITE_FIREBASE_STORAGE_BUCKET: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  VITE_FIREBASE_MESSAGING_SENDER_ID: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  VITE_FIREBASE_APP_ID: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 export const missingFirebaseKeys = Object.keys(ENV_VALUES).filter((key) => !ENV_VALUES[key]?.trim());
@@ -37,7 +37,7 @@ if (isFirebaseConfigured) {
   googleProvider.setCustomParameters({ prompt: 'select_account' });
 
   // Optional: VITE_FIREBASE_USE_EMULATOR=true points a dev server at the local Firebase Emulator Suite.
-  if (env.DEV && env.VITE_FIREBASE_USE_EMULATOR === 'true') {
+  if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_USE_EMULATOR === 'true') {
     connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     connectFirestoreEmulator(db, '127.0.0.1', 8080);
   }

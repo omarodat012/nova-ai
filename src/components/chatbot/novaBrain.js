@@ -1,4 +1,4 @@
-// Nova's brain: Gemini answers when it is configured and reachable; the local keyword
+// Nova's brain: the AI model answers when it is configured and reachable; the local keyword
 // replies below take over when the key is missing or the request fails, so the chat never breaks.
 import { subteams as defaultSubteams } from '../../data/subteams.js';
 import { generateNovaReply, isGeminiConfigured } from '../../services/geminiService.js';
@@ -182,7 +182,7 @@ export async function getNovaReply(
       return await generateNovaReply(history, { signal, subteams, member, user, roleTier });
     } catch (error) {
       if (signal?.aborted) throw error;
-      console.warn(`[NOVA AI] Gemini request failed (${error.message}). Nova is using her local replies instead.`);
+      console.warn(`[NOVA AI] AI request failed (${error.message}). Nova is using her local replies instead.`);
     }
   } else {
     await new Promise((resolve) => setTimeout(resolve, 650 + Math.random() * 650));

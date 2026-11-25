@@ -465,7 +465,7 @@ export const translations = {
       close: 'إغلاق المحادثة',
       clear: 'محادثة جديدة',
       typing: 'نوڤا بتفكر... 🎀',
-      disclaimer: 'نوڤا تعمل بالذكاء الاصطناعي (Gemini) وقد تخطئ أحياناً.',
+      disclaimer: 'نوڤا تعمل بالذكاء الاصطناعي (DeepSeek) وقد تخطئ أحياناً.',
       disclaimerOffline: 'الوضع الأساسي: ردود نوڤا مبدئية حالياً.',
     },
     join: {
@@ -1089,7 +1089,7 @@ export const translations = {
       close: 'Close chat',
       clear: 'Start a new chat',
       typing: 'Nova is thinking... 🎀',
-      disclaimer: 'Nova is powered by AI (Gemini) and can make mistakes.',
+      disclaimer: 'Nova is powered by AI (DeepSeek) and can make mistakes.',
       disclaimerOffline: 'Basic mode: Nova gives simple replies for now.',
     },
     join: {

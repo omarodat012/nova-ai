@@ -53,10 +53,37 @@ const INTENTS = [
     },
   },
   {
+    // Before the founder intent, so "who supervises the team leader?" is answered about the supervisor.
+    keywords: [
+      'مشرف',
+      'ايناس',
+      'خشاشنه',
+      'دكتور',
+      'supervisor',
+      'supervisors',
+      'supervises',
+      'advisor',
+      'faculty',
+      'dr enas',
+      'enas',
+      'khashashneh',
+      'doctor',
+    ],
+    reply: {
+      ar: 'مشرفة فريق NOVA AI هي الدكتورة إيناس خشاشنة، المشرفة الأكاديمية الرسمية للفريق في جامعة اليرموك، وهي اللي بتوجّهنا وبتدعمنا 🎀 أما المؤسِّسة وقائدة الفريق فهي الطالبة شهلا الزواهرة. وإذا حابب توصل للدكتورة، تواصل مع الفريق على واتساب أو إنستغرام.',
+      en: "NOVA AI's Faculty Supervisor is Dr. Enas Khashashneh, the team's official supervisor at Yarmouk University, who guides and supports us 🎀 The Founder and Team Leader is a different person: our student Shahla Al-Zawahreh. To reach Dr. Enas, contact the team on WhatsApp or Instagram.",
+    },
+    // Replaces `reply` when the supervisor herself is the one asking.
+    supervisorReply: {
+      ar: 'إنتِ مشرفتنا يا دكتورة إيناس! 🎀 المشرفة الأكاديمية الرسمية لفريق NOVA AI في جامعة اليرموك، وشكراً على دعمك وتوجيهك إلنا. والمؤسِّسة وقائدة الفريق هي الطالبة شهلا الزواهرة.',
+      en: "That's you, Dr. Enas! 🎀 You are NOVA AI's official Faculty Supervisor at Yarmouk University, and we are grateful for your guidance. Our Founder and Team Leader is our student Shahla Al-Zawahreh.",
+    },
+  },
+  {
     keywords: ['شهلا', 'فاوندر', 'مؤسس', 'قائد', 'founder', 'founded', 'leader', 'shahla'],
     reply: {
-      ar: 'فاوندرنا الفخم هي شهلا الزواهرة، طالبة علم بيانات وذكاء اصطناعي وقائدة فريق NOVA AI. نظّمت وشاركت بهاكاثونات كثيرة لدرجة إننا فقدنا القدرة على عدّها! اكبس زر "عن فاوندرنا الفخم ✨" بأول الصفحة لتعرف أكثر.',
-      en: 'Our amazing founder is Shahla Al-Zawahreh, a Data Science and AI student who leads NOVA AI. She has organised and joined so many hackathons that we lost count! Tap "About Our Amazing Founder ✨" at the top of the page to learn more.',
+      ar: 'فاوندرنا الفخم هي شهلا الزواهرة، مؤسِّسة وقائدة فريق NOVA AI وطالبة علم بيانات وذكاء اصطناعي. نظّمت وشاركت بهاكاثونات كثيرة لدرجة إننا فقدنا القدرة على عدّها! اكبس زر "عن فاوندرنا الفخم ✨" بأول الصفحة لتعرف أكثر. ومشرفة الفريق الأكاديمية هي الدكتورة إيناس خشاشنة.',
+      en: 'Our amazing Founder and Team Leader is Shahla Al-Zawahreh, a Data Science and AI student. She has organised and joined so many hackathons that we lost count! Tap "About Our Amazing Founder ✨" at the top of the page to learn more. Our Faculty Supervisor is Dr. Enas Khashashneh.',
     },
   },
   {
@@ -93,8 +120,8 @@ const INTENTS = [
   {
     keywords: ['شو هو', 'ما هو', 'عن الفريق', 'مين انتو', 'nova ai', 'what is', 'about'],
     reply: {
-      ar: 'NOVA AI فريق طلابي جامعي للذكاء الاصطناعي والتقنية. بنتعلّم سوا، بنبني مشاريع حقيقية، وبنشارك بالهاكاثونات والمسابقات.',
-      en: 'NOVA AI is a university student team for AI and tech. We learn together, build real projects, and take on hackathons and competitions.',
+      ar: 'NOVA AI فريق طلابي للذكاء الاصطناعي والتقنية في جامعة اليرموك، بإشراف الدكتورة إيناس خشاشنة وقيادة مؤسِّسته شهلا الزواهرة. بنتعلّم سوا، بنبني مشاريع حقيقية، وبنشارك بالهاكاثونات والمسابقات.',
+      en: 'NOVA AI is a student team for AI and tech at Yarmouk University, supervised by Dr. Enas Khashashneh and led by its founder Shahla Al-Zawahreh. We learn together, build real projects, and take on hackathons and competitions.',
     },
   },
   {
@@ -158,6 +185,7 @@ function getLocalReply(message, subteams, member, roleTier) {
   const name = isSupervisor ? SUPERVISOR_ADDRESS[lang] : getFirstName(member);
 
   if (intent) {
+    if (isSupervisor && intent.supervisorReply) return intent.supervisorReply[lang];
     // The teammate jokes are written for students, so the supervisor gets the standard replies.
     if (name && intent.memberReply && !isSupervisor) return intent.memberReply[lang](name);
     const openTeams = subteams.filter((team) => team.leaders.length === 0).map((team) => team.name[lang]);

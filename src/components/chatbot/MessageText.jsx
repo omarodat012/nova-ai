@@ -3,7 +3,7 @@ import { SOCIAL_LINKS } from '../../data/links.js';
 import { subteams } from '../../data/subteams.js';
 
 const { instagram, whatsapp } = SOCIAL_LINKS;
-const PAGE_PATHS = [...subteams.map((team) => `/subteam/${team.id}`), '/join'];
+const PAGE_PATHS = [...subteams.map((team) => `/subteam/${team.id}`), '/join', '/profile'];
 const WHATSAPP_NUMBER = '\\+962 ?7 ?7682 ?9501';
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

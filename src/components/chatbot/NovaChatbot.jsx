@@ -59,6 +59,11 @@ function TypingIndicator({ label }) {
 }
 
 export default function NovaChatbot() {
+  const { user } = useAuth();
+  return <NovaChatSession key={user?.uid ?? 'guest'} />;
+}
+
+function NovaChatSession() {
   const { t, localize } = useLanguage();
   const { subteams } = useSubteams();
   const { user, memberProfile, roleTier } = useAuth();

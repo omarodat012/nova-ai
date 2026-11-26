@@ -1,7 +1,7 @@
 // Nova's brain: the AI model answers when it is configured and reachable; the local keyword
 // replies below take over when the key is missing or the request fails, so the chat never breaks.
 import { subteams as defaultSubteams } from '../../data/subteams.js';
-import { generateNovaReply, isGeminiConfigured } from '../../services/geminiService.js';
+import { generateNovaReply, getNovaProfile, isGeminiConfigured } from '../../services/geminiService.js';
 
 const PHONE = '\u2066+962 7 7682 9501\u2069';
 const HANDLE = '\u2066@nov3_ai\u2069';
@@ -19,8 +19,9 @@ const SUPERVISOR_WELCOME = {
 // How Nova addresses the supervisor in her local replies.
 const SUPERVISOR_ADDRESS = { ar: 'دكتورة إيناس', en: 'Dr. Enas' };
 
-function getFirstName(member) {
-  return member?.fullName?.trim().split(/\s+/)[0] ?? '';
+function getFirstName(member, lang = 'en') {
+  const name = member?.fullName?.trim().split(/\s+/)[0] ?? '';
+  return lang === 'ar' && /^nada$/i.test(name) ? 'ندى' : name;
 }
 
 // Nova's opening bubble: members (`member` is useAuth().memberProfile) are greeted by their first name,
@@ -30,7 +31,7 @@ export function getWelcomeMessage(member, roleTier = null) {
   const name = getFirstName(member);
   if (!name) return WELCOME_MESSAGE;
   return {
-    ar: `أهلاً يا ${name}! نورت موقع نوڤا 🎀✨\nكيف بقدر أساعدك اليوم؟`,
+    ar: `أهلاً يا ${getFirstName(member, 'ar')}! نورت موقع نوڤا 🎀✨\nكيف بقدر أساعدك اليوم؟`,
     en: `Hey ${name}! Welcome back to NOVA AI 🎀✨\nHow can I help you today?`,
   };
 }
@@ -177,12 +178,44 @@ function matches(text, keyword) {
   return text.includes(keyword);
 }
 
+const OWN_FIELDS = [
+  ['fullName', 'الاسم', /\bmy (?:full )?name\b|اسمي/],
+  ['email', 'الإيميل', /\bmy (?:registered )?e-?mail\b|ايميلي|بريدي/],
+  ['major', 'التخصص', /\bmy (?:major|speciali[sz]ation)\b|تخصصي/],
+  ['academicYear', 'السنة الدراسية', /\bmy (?:academic|study) year\b|سنتي|سنه دراستي/],
+  ['phone', 'رقم الهاتف', /\bmy (?:phone|mobile|number)\b|رقمي|هاتفي|تلفوني/],
+  ['subteam', 'الفريق الفرعي', /\bmy (?:sub-?team|team)\b|فريقي/],
+  ['roleTier', 'مستوى الدور', /\bmy role tier\b|مستوي دوري/],
+  ['role', 'الدور', /\bmy (?:role|position)\b|دوري|منصبي/],
+  ['bio', 'النبذة', /\bmy (?:bio|biography)\b|نبذتي/],
+  ['skills', 'المهارات', /\bmy skills\b|مهاراتي/],
+  ['university', 'الجامعة', /\bmy university\b|جامعتي/],
+];
+
+function ownProfileReply(text, lang, member, subteams) {
+  const fields = OWN_FIELDS.filter(([, , pattern]) => pattern.test(text));
+  if (!fields.length) return null;
+  if (!member) return lang === 'ar' ? 'ما عندي ملف عضوية إلك حالياً. سجّل دخولك وافتح /profile لتشوف بياناتك.' : 'I do not have a member profile for you right now. Sign in and open /profile to view your details.';
+  const profile = getNovaProfile(member);
+  return fields.map(([key, label]) => {
+    let value = profile[key];
+    if (key === 'major') value ??= profile.specialization;
+    if (key === 'subteam') value = subteams.find((team) => team.id === value)?.name[lang] ?? value;
+    if (value === undefined) return lang === 'ar' ? `${label} مش معبّى بملفك لسا. بتقدر تحدّثه من /profile.` : `Your ${key} is not filled in yet. You can update it at /profile.`;
+    if (key === 'fullName' && lang === 'ar') value = value.replace(/^nada(?=\s|$)/i, 'ندى');
+    const display = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    return `${lang === 'ar' ? label : key}: ${display}`;
+  }).join('\n');
+}
+
 function getLocalReply(message, subteams, member, roleTier) {
   const text = normalize(message);
   const intent = INTENTS.find(({ keywords }) => keywords.some((keyword) => matches(text, keyword)));
   const lang = /[\u0600-\u06FF]/.test(message) ? 'ar' : 'en';
   const isSupervisor = roleTier === 'supervisor';
-  const name = isSupervisor ? SUPERVISOR_ADDRESS[lang] : getFirstName(member);
+  const name = isSupervisor ? SUPERVISOR_ADDRESS[lang] : getFirstName(member, lang);
+  const profileReply = ownProfileReply(text, lang, member, subteams);
+  if (profileReply) return profileReply;
 
   if (intent) {
     if (isSupervisor && intent.supervisorReply) return intent.supervisorReply[lang];

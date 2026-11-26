@@ -3,8 +3,7 @@ import { ListFilter, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { getRoleById } from '../../data/memberRoles.js';
 import { useAdminAction } from '../../hooks/useAdminAction.js';
-import { deleteMember, syncMemberEmails } from '../../services/membersService.js';
-import { syncPublicMembers } from '../../services/publicMembersService.js';
+import { deleteMember, reconcileMemberIndexes } from '../../services/membersService.js';
 import {
   ActionAlert,
   CollectionState,
@@ -90,13 +89,13 @@ export default function MembersTab({ collection }) {
 
   // Opening the tab repairs `member_emails`, the lookup firestore.rules uses to recognize members (members added
   // before it existed have no entry yet), and `public_members`, the cards of the home page team strip.
-  // It waits for the real list: syncing against an empty one would wipe both.
-  const ready = !collection.loading && !collection.error;
-  const members = collection.items;
+  // The repair only adds or refreshes entries and reads `members` from the server itself. It still waits for a
+  // server-confirmed, non-empty list here: the first snapshot can be a cached fragment of the collection.
+  const ready = !collection.loading && !collection.error && !collection.fromCache && collection.items.length > 0;
   useEffect(() => {
     if (!ready) return;
-    Promise.all([syncMemberEmails(members), syncPublicMembers(members)]).catch((error) => {
-      console.error('[NOVA AI] Could not sync the members lookup and the public team list.', error);
+    reconcileMemberIndexes().catch((error) => {
+      console.error('[NOVA AI] Could not repair the members lookup and the public team list.', error);
       setSyncFailed(true);
     });
     // Once per visit to the tab; later adds, edits and deletes keep both up to date themselves.

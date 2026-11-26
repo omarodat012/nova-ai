@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   getDocs,
+  getDocsFromServer,
   limit,
   onSnapshot,
   query,
@@ -11,9 +12,9 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { SUPERVISOR_MEMBER_ID } from '../data/memberRoles.js';
+import { SUPERVISOR_MEMBER_ID, getRoleTier } from '../data/memberRoles.js';
 import { requireDb } from '../firebase/config.js';
-import { publicMemberRef, syncOwnPublicProfile, toPublicMember } from './publicMembersService.js';
+import { publicMemberRef, syncOwnPublicProfile, toPublicMember, upsertPublicMembers } from './publicMembersService.js';
 
 const MEMBERS = 'members';
 // One empty-ish document per member address (document ID = lowercased email). firestore.rules checks it to decide
@@ -79,10 +80,10 @@ export async function updateMember(id, member, previousEmail) {
   if (previousLookup && previousLookup.id !== lookup?.id && !(await isEmailUsedByAnotherMember(db, previousLookup.id, id))) {
     batch.delete(previousLookup);
   }
-  // The public card follows the edit, and disappears if the member became the supervisor.
+  // The public card follows the edit, and is removed only when the member became the supervisor.
   const publicMember = toPublicMember(member, { keepPhoto: true });
   if (publicMember) batch.set(publicMemberRef(db, id), publicMember, { merge: true });
-  else batch.delete(publicMemberRef(db, id));
+  else if (getRoleTier({ member }) === 'supervisor') batch.delete(publicMemberRef(db, id));
   await batch.commit();
 }
 
@@ -97,24 +98,32 @@ export async function deleteMember(id, email) {
   await batch.commit();
 }
 
-// Brings `member_emails` in line with the full members list: adds the missing addresses and removes the ones
-// no member has any more. Resolves to the number of documents it changed. Admins only (see firestore.rules).
-export async function syncMemberEmails(members) {
-  const db = requireDb();
+// Adds the `member_emails` lookups that are missing. It never deletes one: losing a lookup locks a member out of
+// the rosters, so lookups are only removed by deleteMember() and by updateMember() when an address changes.
+async function addMissingMemberEmails(db, members) {
   const wanted = new Set(members.map((member) => memberEmailRef(db, member.emailLower ?? member.email)?.id).filter(Boolean));
-  const existing = new Set((await getDocs(collection(db, MEMBER_EMAILS))).docs.map((document) => document.id));
+  const existing = new Set((await getDocsFromServer(collection(db, MEMBER_EMAILS))).docs.map((document) => document.id));
+  const missing = [...wanted].filter((id) => !existing.has(id));
 
-  const changes = [
-    ...[...wanted].filter((id) => !existing.has(id)).map((id) => (batch) => batch.set(doc(db, MEMBER_EMAILS, id), memberEmailData())),
-    ...[...existing].filter((id) => !wanted.has(id)).map((id) => (batch) => batch.delete(doc(db, MEMBER_EMAILS, id))),
-  ];
-
-  for (let start = 0; start < changes.length; start += BATCH_LIMIT) {
+  for (let start = 0; start < missing.length; start += BATCH_LIMIT) {
     const batch = writeBatch(db);
-    changes.slice(start, start + BATCH_LIMIT).forEach((apply) => apply(batch));
+    missing.slice(start, start + BATCH_LIMIT).forEach((id) => batch.set(doc(db, MEMBER_EMAILS, id), memberEmailData()));
     await batch.commit();
   }
-  return changes.length;
+  return missing.length;
+}
+
+// Repairs `member_emails` and `public_members` for members that have no entry yet. Create/update only, never delete.
+// It reads `members` straight from the server instead of trusting a list held by the page: a live listener can
+// first report only the documents this browser has cached (often just the admin's own), and offline this throws.
+// Resolves to the number of documents it wrote. Admins only (see firestore.rules).
+export async function reconcileMemberIndexes() {
+  const db = requireDb();
+  const snapshot = await getDocsFromServer(collection(db, MEMBERS));
+  if (snapshot.empty) return 0;
+
+  const members = snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
+  return (await addMissingMemberEmails(db, members)) + (await upsertPublicMembers(members));
 }
 
 // The member document of a signed-in account ({ id, ...data }), or null when the address is not a member.

@@ -1,11 +1,11 @@
-import { collection, doc, getDocs, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDocs, getDocsFromServer, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { SUPERVISOR_MEMBER_ID, getRoleTier } from '../data/memberRoles.js';
 import { requireDb } from '../firebase/config.js';
 
 // The public face of `members` (document ID = member ID), shown to every visitor in the home page team strip.
 // It holds a name, photo, role and SubTeam only. Phones and emails never leave `members`.
 const PUBLIC_MEMBERS = 'public_members';
-// A photo can be close to 100 KB and one batch is capped at 10 MB, so the reconcile writes in small batches.
+// A photo can be close to 100 KB and one batch is capped at 10 MB, so the repair writes in small batches.
 const BATCH_LIMIT = 40;
 const COMPARED_FIELDS = ['name', 'photoURL', 'role', 'roleTier', 'subteam'];
 
@@ -50,9 +50,10 @@ export async function fetchPublicMembers() {
   return snapshot.docs.map((document) => ({ id: document.id, ...document.data() }));
 }
 
-// Brings `public_members` in line with the full members list: adds or refreshes the non-supervisor members and
-// removes everyone else. Resolves to the number of documents it changed. Admins only (see firestore.rules).
-export async function syncPublicMembers(members) {
+// Adds the missing public cards and refreshes the outdated ones. It never deletes a card: a list that is short for
+// any reason must not empty the team strip, so cards are only removed by deleteMember() and updateMember().
+// `members` must come from the server (see reconcileMemberIndexes). Resolves to the number of cards it wrote.
+export async function upsertPublicMembers(members) {
   const db = requireDb();
   const wanted = new Map();
   members.forEach((member) => {
@@ -60,15 +61,12 @@ export async function syncPublicMembers(members) {
     if (fields) wanted.set(member.id, fields);
   });
   const existing = new Map(
-    (await getDocs(collection(db, PUBLIC_MEMBERS))).docs.map((document) => [document.id, document.data()]),
+    (await getDocsFromServer(collection(db, PUBLIC_MEMBERS))).docs.map((document) => [document.id, document.data()]),
   );
 
-  const changes = [
-    ...[...wanted]
-      .filter(([id, fields]) => COMPARED_FIELDS.some((field) => (existing.get(id)?.[field] ?? null) !== fields[field]))
-      .map(([id, fields]) => (batch) => batch.set(publicMemberRef(db, id), { ...fields, updatedAt: serverTimestamp() })),
-    ...[...existing.keys()].filter((id) => !wanted.has(id)).map((id) => (batch) => batch.delete(publicMemberRef(db, id))),
-  ];
+  const changes = [...wanted]
+    .filter(([id, fields]) => COMPARED_FIELDS.some((field) => (existing.get(id)?.[field] ?? null) !== fields[field]))
+    .map(([id, fields]) => (batch) => batch.set(publicMemberRef(db, id), { ...fields, updatedAt: serverTimestamp() }));
 
   for (let start = 0; start < changes.length; start += BATCH_LIMIT) {
     const batch = writeBatch(db);

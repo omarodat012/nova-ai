@@ -506,6 +506,8 @@ export const translations = {
         subteam: 'اختر الفريق الفرعي الذي تريد الانضمام إليه.',
         category: 'اختر نوع الرسالة.',
         submit: 'تعذّر إرسال الطلب. حاول مرة أخرى.',
+        alreadyMember:
+          'هذا البريد الإلكتروني مسجّل بالفعل كعضو في فريق NOVA AI! يمكنك تسجيل الدخول مباشرة للوصول إلى ملفك الشخصي.',
         photoSource: 'أدخل اسم مجلد الصور أو مساره، أو رابط صورة يبدأ بـ \u2066https://\u2069',
         photoPath: 'أدخل مسار صورة مثل \u2066/assets/leaders/name.jpg\u2069 أو رابطاً يبدأ بـ \u2066https://\u2069',
       },
@@ -1130,6 +1132,8 @@ export const translations = {
         subteam: 'Choose the SubTeam you want to join.',
         category: 'Choose a message type.',
         submit: "We couldn't submit your application. Please try again.",
+        alreadyMember:
+          'This email is already registered as a NOVA AI member! You can sign in directly to access your profile.',
         photoSource: 'Enter a photos folder name or path, or an image link starting with https://',
         photoPath: 'Enter an image path like /assets/leaders/name.jpg or a link starting with https://',
       },

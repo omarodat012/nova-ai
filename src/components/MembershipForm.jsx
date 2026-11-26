@@ -39,6 +39,11 @@ function validate(values) {
   return errors;
 }
 
+const SUBMIT_STATUS_BY_CODE = {
+  'firebase/not-configured': 'not-configured',
+  'application/already-member': 'already-member',
+};
+
 function toApplication(values) {
   return {
     fullName: values.fullName.trim(),
@@ -182,7 +187,7 @@ function ApplicationFlow({ preset }) {
       setStatus('idle');
     } catch (error) {
       console.error('[NOVA AI] Could not submit the application.', error);
-      setStatus(error.code === 'firebase/not-configured' ? 'not-configured' : 'error');
+      setStatus(SUBMIT_STATUS_BY_CODE[error.code] ?? 'error');
     }
   };
 
@@ -262,13 +267,13 @@ function ApplicationFlow({ preset }) {
                 ))}
               </SelectField>
 
-              {status === 'error' && (
+              {(status === 'error' || status === 'already-member') && (
                 <p
                   role="alert"
                   className="flex items-center gap-2 rounded-2xl border border-bow/40 bg-bow/10 px-4 py-3 text-sm font-medium"
                 >
                   <CircleAlert className="size-4 shrink-0 text-bow" />
-                  {t('form.errors.submit')}
+                  {t(status === 'error' ? 'form.errors.submit' : 'form.errors.alreadyMember')}
                 </p>
               )}
               {status === 'not-configured' && <FirebaseNotice />}

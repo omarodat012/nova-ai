@@ -120,9 +120,17 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
-    // Anyone can submit an application; only admins can read or manage them.
+    // True when the address already has a `member_emails` entry (document ID = lowercased email).
+    // An address with a slash can never be such an ID, and would not form a valid path here.
+    function isMemberEmail(email) {
+      return !email.matches('.*/.*')
+        && exists(/databases/$(database)/documents/member_emails/$(email.trim().lower()));
+    }
+
+    // Anyone can submit an application, except with an address that is already a member's.
+    // Only admins can read or manage them.
     match /applications/{applicationId} {
-      allow create: if isValidApplication(request.resource.data);
+      allow create: if isValidApplication(request.resource.data) && !isMemberEmail(request.resource.data.email);
       allow read, update, delete: if isAdmin();
     }
 
@@ -170,8 +178,11 @@ service cloud.firestore {
     }
 
     // The members lookup behind isMember(). The app keeps it in sync with `members` from the admin dashboard.
+    // Anyone may check one exact address (the Join form does, before submitting); only admins can list or write,
+    // so the addresses cannot be browsed or scraped.
     match /member_emails/{emailLower} {
-      allow read, write: if isAdmin();
+      allow get: if true;
+      allow list, write: if isAdmin();
     }
 
     // What members see on the SubTeam rosters: one switch per SubTeam plus the "show member details" switch.

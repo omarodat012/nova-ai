@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   runTransaction,
   serverTimestamp,
   updateDoc,
@@ -13,10 +14,29 @@ import { publicMemberRef, toPublicMember } from './publicMembersService.js';
 
 const APPLICATIONS = 'applications';
 
+// True when the address already belongs to a member. One exact-ID read, which is all firestore.rules lets a guest do
+// on `member_emails`. If the check itself cannot run, the application goes ahead and firestore.rules has the last word.
+async function isMemberEmail(db, email) {
+  const lookup = memberEmailRef(db, email);
+  if (!lookup) return false;
+  try {
+    return (await getDoc(lookup)).exists();
+  } catch (error) {
+    console.warn('[NOVA AI] Could not check whether this email is already a member.', error);
+    return false;
+  }
+}
+
 // Called by MembershipForm. `formData` is the normalized form (see toApplication in MembershipForm.jsx).
+// Rejects with code 'application/already-member' when the email is already on the members list.
 export async function submitApplication(formData) {
+  const db = requireDb();
+  if (await isMemberEmail(db, formData.email)) {
+    throw Object.assign(new Error('This email already belongs to a member.'), { code: 'application/already-member' });
+  }
+
   const application = { ...formData, status: 'pending', submittedByUid: auth?.currentUser?.uid || null };
-  const reference = await addDoc(collection(requireDb(), APPLICATIONS), {
+  const reference = await addDoc(collection(db, APPLICATIONS), {
     ...application,
     createdAt: serverTimestamp(),
   });

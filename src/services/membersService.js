@@ -151,6 +151,38 @@ export function subscribeToSubteamMembers(subteamId, onMembers, onError) {
   );
 }
 
+const LAST_LOGIN_KEY = 'nova-last-login:';
+// Accounts recorded (or being recorded) by this page, so two lookups in a row cannot write twice.
+const recordedLogins = new Set();
+
+// Stamps `lastLoginAt` on the member document of the signed-in account, once per browser session: the mark is kept
+// in sessionStorage, so page reloads and re-renders do not write again. It never throws, so it cannot block sign-in.
+// `lastLoginAt` stays in `members`; it is never copied to `public_members`.
+export async function recordLastLogin(memberId, uid) {
+  const key = `${LAST_LOGIN_KEY}${uid}`;
+  if (recordedLogins.has(key)) return;
+  recordedLogins.add(key);
+  try {
+    if (sessionStorage.getItem(key) === memberId) return;
+    await updateDoc(doc(requireDb(), MEMBERS, memberId), { lastLoginAt: serverTimestamp() });
+    sessionStorage.setItem(key, memberId);
+  } catch (error) {
+    recordedLogins.delete(key);
+    console.warn('[NOVA AI] Could not record the last login.', error);
+  }
+}
+
+// Called on sign-out, so signing in again in the same tab counts as a new login.
+export function forgetLastLoginMark(uid) {
+  const key = `${LAST_LOGIN_KEY}${uid}`;
+  recordedLogins.delete(key);
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Storage can be unavailable (private mode); the in-memory mark above is already cleared.
+  }
+}
+
 // The Faculty Supervisor's first profile save, when no admin has added her to `members` yet.
 // firestore.rules allows exactly this document, for her verified address only.
 export function createSupervisorProfile(email, { fullName, phone, photoURL }) {

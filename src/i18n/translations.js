@@ -295,6 +295,8 @@ export const translations = {
         emptyText: 'أضف الأعضاء الحاليين يدوياً، أو اقبل طلبات الانتساب ليُضافوا تلقائياً.',
         deleteTitle: 'حذف العضو؟',
         deleteText: 'سيُحذف هذا العضو نهائياً من قائمة الأعضاء.',
+        lastLogin: 'آخر تسجيل دخول',
+        neverSignedIn: 'لم يسجّل دخول بعد',
       },
       applications: {
         statusFilter: 'تصفية حسب الحالة',
@@ -921,6 +923,8 @@ export const translations = {
         emptyText: 'Add existing members by hand, or approve applications to add them automatically.',
         deleteTitle: 'Delete this member?',
         deleteText: 'This member will be permanently removed from the members list.',
+        lastLogin: 'Last login',
+        neverSignedIn: 'Never signed in',
       },
       applications: {
         statusFilter: 'Filter by status',

@@ -14,7 +14,8 @@ export function useCollection(name) {
       collection(db, name),
       (snapshot) => {
         setState({
-          items: snapshot.docs.map((document) => ({ id: document.id, ...document.data() })),
+          // 'estimate' keeps a server timestamp this browser just wrote from reading as null until it is confirmed.
+          items: snapshot.docs.map((document) => ({ id: document.id, ...document.data({ serverTimestamps: 'estimate' }) })),
           loading: false,
           error: null,
           fromCache: snapshot.metadata.fromCache,

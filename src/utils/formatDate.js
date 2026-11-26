@@ -13,6 +13,14 @@ export function formatDate(value, lang) {
   }).format(date);
 }
 
+// Date and time of day, e.g. "26 November 2026 at 21:03". Accepts a Date or a Firestore Timestamp; '' when there is none.
+export function formatDateTime(value, lang) {
+  const date = typeof value?.toDate === 'function' ? value.toDate() : new Date(value ?? NaN);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-JO' : 'en-GB', { dateStyle: 'long', timeStyle: 'short' }).format(date);
+}
+
 const RELATIVE_UNITS = [
   ['day', 86400],
   ['hour', 3600],

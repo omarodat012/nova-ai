@@ -11,7 +11,7 @@ import {
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { FirebaseNotConfiguredError, auth, db, googleProvider, isFirebaseConfigured, requireDb } from '../firebase/config.js';
 import { SUPERVISOR_MEMBER_ID, SUPERVISOR_NAME, getRoleTier, isSupervisorEmail } from '../data/memberRoles.js';
-import { findMemberByEmail } from '../services/membersService.js';
+import { findMemberByEmail, forgetLastLoginMark, recordLastLogin } from '../services/membersService.js';
 import { useLanguage } from './LanguageContext.jsx';
 import { useSubteams } from './SubteamsContext.jsx';
 
@@ -142,6 +142,8 @@ export function AuthProvider({ children }) {
       }
       // firestore.rules only lets a verified address read its member document.
       const found = current.emailVerified ? await findMemberByEmail(current.email) : null;
+      // Not awaited: recording the login must never delay or fail the session.
+      if (found) recordLastLogin(found.id, current.uid);
       const profile = found ?? supervisorFallbackProfile(current);
       if (isCurrent()) setMembership({ uid: current.uid, profile });
       return profile;
@@ -233,7 +235,11 @@ export function AuthProvider({ children }) {
       signUp: refreshAfter(signUp),
       logIn: refreshAfter(logIn),
       logInWithGoogle: refreshAfter(logInWithGoogle),
-      logOut: () => signOut(requireAuth()),
+      logOut: () => {
+        const currentUid = requireAuth().currentUser?.uid;
+        if (currentUid) forgetLastLoginMark(currentUid);
+        return signOut(auth);
+      },
     };
   }, [user, loading, membership, subteams, verificationSent, refreshMemberProfile, sendVerificationEmail, confirmEmailVerified, updateDisplayName]);
 

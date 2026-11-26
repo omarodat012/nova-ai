@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
-import { ListFilter, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
+import { Clock, ListFilter, Pencil, Trash2, UserPlus, Users } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { getRoleById } from '../../data/memberRoles.js';
 import { useAdminAction } from '../../hooks/useAdminAction.js';
 import { deleteMember, reconcileMemberIndexes } from '../../services/membersService.js';
+import { formatDateTime } from '../../utils/formatDate.js';
 import {
   ActionAlert,
   CollectionState,
   ConfirmDialog,
   FilterSelect,
   IconButton,
+  MetaItem,
   PersonMeta,
   SearchInput,
   SubteamChip,
@@ -35,8 +37,9 @@ const ROLE_CHIP_TONES = {
 };
 
 function MemberRow({ member, onEdit, onDelete }) {
-  const { t, localize } = useLanguage();
+  const { t, localize, lang } = useLanguage();
   const role = getRoleById(member.role);
+  const lastLogin = formatDateTime(member.lastLoginAt, lang);
 
   return (
     <li className="glass flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:p-5">
@@ -59,7 +62,20 @@ function MemberRow({ member, onEdit, onDelete }) {
             )}
             <SubteamChip id={member.subteam} />
           </div>
-          <PersonMeta person={member} />
+          <PersonMeta person={member}>
+            {lastLogin ? (
+              <MetaItem icon={Clock}>
+                {t('admin.members.lastLogin')}: <time dateTime={member.lastLoginAt.toDate().toISOString()}>{lastLogin}</time>
+              </MetaItem>
+            ) : (
+              <li>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/40 bg-amber-300/10 px-2.5 py-0.5 text-xs font-bold text-amber-200">
+                  <Clock className="size-3.5" />
+                  {t('admin.members.neverSignedIn')}
+                </span>
+              </li>
+            )}
+          </PersonMeta>
         </div>
       </div>
 

@@ -140,13 +140,18 @@ service cloud.firestore {
     // Guests and accounts that are not members cannot read anyone.
     // The Faculty Supervisor reads the rosters like a member, and may create members/supervisor (her own profile)
     // when no admin has added her yet; after that the same self-update limits apply to her as to any member.
+    // Signing in also stamps the member's own `lastLoginAt`: that write may touch nothing else, and the value must
+    // be the server's time, so a member cannot backdate or forge it.
     match /members/{memberId} {
       allow read: if isAdmin() || ownsMember(resource.data) || isMember() || isSupervisor();
       allow update: if isAdmin()
         || (ownsMember(resource.data)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
             ['fullName', 'phone', 'isStudent', 'major', 'university', 'academicYear', 'photoURL', 'updatedAt'])
-          && isValidOwnProfile(request.resource.data));
+          && isValidOwnProfile(request.resource.data))
+        || (ownsMember(resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt'])
+          && request.resource.data.lastLoginAt == request.time);
       allow create: if isAdmin()
         || (isSupervisor() && memberId == 'supervisor' && isValidSupervisorProfile(request.resource.data));
       allow delete: if isAdmin();
